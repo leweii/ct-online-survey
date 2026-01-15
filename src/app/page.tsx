@@ -81,7 +81,7 @@ export default function Home() {
         </div>
 
         {/* Content based on mode */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6 min-h-[280px]">
           {mode === "create" ? (
             <div className="space-y-4">
               {/* Creator Name Input */}
