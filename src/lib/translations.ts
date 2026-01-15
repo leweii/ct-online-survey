@@ -12,7 +12,7 @@ export const translations = {
 
     // Home page
     home: {
-      title: "Survey Assistant",
+      title: "ChatSurvey",
       subtitle: "Create, fill, and analyze surveys through natural conversations",
       creatorNameLabel: "Your Creator Name",
       creatorNamePlaceholder: "Enter a name to remember your surveys",
@@ -165,7 +165,7 @@ export const translations = {
 
     // Home page
     home: {
-      title: "问卷助手",
+      title: "畅谈问卷",
       subtitle: "通过自然对话创建，填写，分析问卷",
       creatorNameLabel: "您的创建者名称",
       creatorNamePlaceholder: "输入名称以记住您的问卷（如：胖墩墩）",
