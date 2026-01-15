@@ -6,6 +6,7 @@ import { ChatInterface, Message } from "@/components/ChatInterface";
 import { ResponseModeSelector } from "@/components/ResponseModeSelector";
 import { FormResponse } from "@/components/FormResponse";
 import { QuestionInput } from "@/components/QuestionInput";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Survey, Question } from "@/types/database";
 
 type ResponseMode = "selecting" | "form" | "chat";
@@ -21,6 +22,7 @@ interface ResponseState {
 export default function SurveyResponsePage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useLanguage();
   const surveyId = params.id as string;
 
   const [survey, setSurvey] = useState<Survey | null>(null);
@@ -47,26 +49,26 @@ export default function SurveyResponsePage() {
         const res = await fetch(`/api/surveys/${surveyId}`);
         if (!res.ok) {
           if (res.status === 404) {
-            setError("未找到问卷");
+            setError(t.survey.notFound);
           } else {
-            setError("加载问卷失败");
+            setError(t.survey.loadFailed);
           }
           return;
         }
         const data = await res.json();
         if (data.status !== "active") {
-          setError("此问卷当前不接受回复");
+          setError(t.survey.notAccepting);
           return;
         }
         setSurvey(data);
       } catch {
-        setError("加载问卷失败");
+        setError(t.survey.loadFailed);
       } finally {
         setLoading(false);
       }
     }
     fetchSurvey();
-  }, [surveyId]);
+  }, [surveyId, t.survey.notFound, t.survey.loadFailed, t.survey.notAccepting]);
 
   const handleSelectMode = (selectedMode: "form" | "chat") => {
     setMode(selectedMode);
@@ -78,7 +80,9 @@ export default function SurveyResponsePage() {
         {
           id: "welcome",
           role: "assistant",
-          content: `您好！让我们开始问卷调查。\n\n**问题 1 / ${questions.length}：**\n${questions[0]?.text || ""}`,
+          content: t.survey.welcomeMessage
+            .replace("{total}", String(questions.length))
+            .replace("{question}", questions[0]?.text || ""),
         },
       ]);
     }
@@ -97,11 +101,11 @@ export default function SurveyResponsePage() {
         }),
       });
 
-      if (!res.ok) throw new Error("提交失败");
+      if (!res.ok) throw new Error(t.survey.submitFailed);
       setFormCompleted(true);
     } catch (error) {
       console.error("Submit error:", error);
-      alert("问卷提交失败，请重试。");
+      alert(t.survey.submitFailedMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -120,11 +124,11 @@ export default function SurveyResponsePage() {
         }),
       });
 
-      if (!res.ok) throw new Error("提交失败");
+      if (!res.ok) throw new Error(t.survey.submitFailed);
       setFormCompleted(true);
     } catch (error) {
       console.error("Submit error:", error);
-      alert("问卷提交失败，请重试。");
+      alert(t.survey.submitFailedMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -190,7 +194,7 @@ export default function SurveyResponsePage() {
                   const questions = survey.questions as Question[];
                   if (data.responseState.isCompleted) {
                     setCurrentQuestion(null);
-                    accumulatedText += "\n\n感谢您完成问卷！您的回答已保存。";
+                    accumulatedText += "\n\n" + t.survey.thankYou;
                   } else {
                     setCurrentQuestion(questions[data.responseState.currentQuestionIndex] || null);
                   }
@@ -220,7 +224,7 @@ export default function SurveyResponsePage() {
           {
             id: Date.now().toString() + "-error",
             role: "assistant",
-            content: "抱歉，遇到了一些问题。请重试。",
+            content: t.create.errorMessage,
           },
         ]);
       } finally {
@@ -228,7 +232,7 @@ export default function SurveyResponsePage() {
         setStreamingContent("");
       }
     },
-    [messages, responseState, survey, surveyId]
+    [messages, responseState, survey, surveyId, t.survey.thankYou, t.create.errorMessage]
   );
 
   const handleInlineSubmit = () => {
@@ -242,7 +246,7 @@ export default function SurveyResponsePage() {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">加载问卷中...</p>
+          <p className="text-gray-600">{t.survey.loadingSurvey}</p>
         </div>
       </div>
     );
@@ -258,7 +262,7 @@ export default function SurveyResponsePage() {
             onClick={() => router.push("/")}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            返回首页
+            {t.returnHome}
           </button>
         </div>
       </div>
@@ -279,13 +283,13 @@ export default function SurveyResponsePage() {
         <div className="h-screen flex items-center justify-center">
           <div className="text-center max-w-md p-6">
             <div className="text-green-500 text-6xl mb-4">&#10003;</div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">感谢您！</h2>
-            <p className="text-gray-600 mb-6">您的回答已成功提交。</p>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">{t.survey.completed}</h2>
+            <p className="text-gray-600 mb-6">{t.survey.thankYou}</p>
             <button
               onClick={() => router.push("/")}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              返回首页
+              {t.returnHome}
             </button>
           </div>
         </div>
@@ -342,8 +346,8 @@ export default function SurveyResponsePage() {
             isLoading={isLoading}
             placeholder={
               responseState?.isCompleted
-                ? "问卷已完成！"
-                : "输入您的回答..."
+                ? t.survey.completed
+                : t.survey.inputPlaceholder
             }
             streamingContent={streamingContent}
             hideInput
@@ -366,7 +370,7 @@ export default function SurveyResponsePage() {
                 disabled={inlineValue === undefined || inlineValue === null || inlineValue === ""}
                 className="mt-3 w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                提交回答
+                {t.survey.submitAnswer}
               </button>
             )}
           </div>
@@ -378,7 +382,7 @@ export default function SurveyResponsePage() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="或在此输入您的回答..."
+                placeholder={t.survey.orEnterAnswer}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !isLoading) {
@@ -402,7 +406,7 @@ export default function SurveyResponsePage() {
                 disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                发送
+                {t.send}
               </button>
             </div>
           </div>

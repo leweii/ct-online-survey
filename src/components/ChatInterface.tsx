@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, FormEvent } from "react";
 import { MessageBubble } from "./MessageBubble";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export interface Message {
   id: string;
@@ -22,10 +23,11 @@ export function ChatInterface({
   messages,
   onSendMessage,
   isLoading = false,
-  placeholder = "Type your message...",
+  placeholder,
   streamingContent,
   hideInput = false,
 }: ChatInterfaceProps) {
+  const { t } = useLanguage();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +73,7 @@ export function ChatInterface({
                   <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                   <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
-                <span className="text-sm">AI 正在思考...</span>
+                <span className="text-sm">{t.chat.aiThinking}</span>
               </div>
             </div>
           </div>
@@ -88,7 +90,7 @@ export function ChatInterface({
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={placeholder}
+              placeholder={placeholder || t.question.typeAnswer}
               disabled={isLoading}
               className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
             />
@@ -100,7 +102,7 @@ export function ChatInterface({
               {isLoading ? (
                 <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
-                "发送"
+                t.send
               )}
             </button>
           </div>

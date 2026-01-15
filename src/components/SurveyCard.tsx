@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Survey } from "@/types/database";
 
 interface SurveyCardProps {
@@ -15,6 +16,8 @@ export function SurveyCard({
   onExport,
   onStatusChange,
 }: SurveyCardProps) {
+  const { t } = useLanguage();
+
   const statusColors = {
     draft: "bg-yellow-100 text-yellow-800",
     active: "bg-green-100 text-green-800",
@@ -22,9 +25,9 @@ export function SurveyCard({
   };
 
   const statusLabels = {
-    draft: "草稿",
-    active: "进行中",
-    closed: "已关闭",
+    draft: t.card.draft,
+    active: t.card.active,
+    closed: t.card.closed,
   };
 
   return (
@@ -49,8 +52,8 @@ export function SurveyCard({
       )}
 
       <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-        <span>{survey.questions.length} 个问题</span>
-        <span>{responseCount} 条回复</span>
+        <span>{survey.questions.length} {t.questions}</span>
+        <span>{responseCount} {t.responses}</span>
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -59,7 +62,7 @@ export function SurveyCard({
             onClick={() => onStatusChange("active")}
             className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
           >
-            激活
+            {t.card.activate}
           </button>
         )}
         {onStatusChange && survey.status === "active" && (
@@ -67,7 +70,7 @@ export function SurveyCard({
             onClick={() => onStatusChange("closed")}
             className="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
           >
-            关闭
+            {t.card.close}
           </button>
         )}
         {onExport && responseCount > 0 && (
@@ -75,7 +78,7 @@ export function SurveyCard({
             onClick={onExport}
             className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
           >
-            导出 CSV
+            {t.card.exportCSV}
           </button>
         )}
         <button
@@ -85,7 +88,7 @@ export function SurveyCard({
           }}
           className="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition-colors"
         >
-          复制链接
+          {t.card.copyLink}
         </button>
       </div>
     </div>

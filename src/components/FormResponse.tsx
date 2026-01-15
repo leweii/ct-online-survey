@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Survey, Question } from "@/types/database";
 import { QuestionInput } from "./QuestionInput";
 
@@ -17,6 +18,7 @@ export function FormResponse({
   onPartialSubmit,
   isSubmitting = false,
 }: FormResponseProps) {
+  const { t } = useLanguage();
   const questions = survey.questions as Question[];
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -41,7 +43,7 @@ export function FormResponse({
       if (q.required) {
         const answer = answers[q.id];
         if (answer === undefined || answer === null || answer === "") {
-          newErrors[q.id] = "此字段为必填项";
+          newErrors[q.id] = t.form.required;
         }
       }
     });
@@ -139,7 +141,7 @@ export function FormResponse({
             disabled={isSubmitting}
             className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? "提交中..." : "提交问卷"}
+            {isSubmitting ? t.form.submitting : t.form.submitSurvey}
           </button>
 
           {/* Early submit button - shown when at least one question answered but not all */}
@@ -150,7 +152,7 @@ export function FormResponse({
               disabled={isSubmitting}
               className="w-full py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              提前提交 ({answeredCount}/{questions.length} 已回答)
+              {t.form.earlySubmit.replace("{answered}", String(answeredCount)).replace("{total}", String(questions.length))}
             </button>
           )}
         </div>
@@ -160,37 +162,33 @@ export function FormResponse({
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
-            <h2 className="text-xl font-bold mb-4">确认提前提交</h2>
+            <h2 className="text-xl font-bold mb-4">{t.form.confirmEarlySubmit}</h2>
             <div className="space-y-3 mb-6">
-              <p className="text-gray-600">
-                您即将提交部分填写的问卷：
-              </p>
+              <p className="text-gray-600">{t.form.aboutToSubmit}</p>
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">已回答问题</span>
-                  <span className="font-medium text-green-600">{answeredCount} 个</span>
+                  <span className="text-gray-600">{t.form.answeredQuestions}</span>
+                  <span className="font-medium text-green-600">{answeredCount}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">未回答问题</span>
-                  <span className="font-medium text-orange-600">{unansweredCount} 个</span>
+                  <span className="text-gray-600">{t.form.unansweredQuestions}</span>
+                  <span className="font-medium text-orange-600">{unansweredCount}</span>
                 </div>
               </div>
-              <p className="text-sm text-red-600 font-medium">
-                提交后将无法修改，确定要继续吗？
-              </p>
+              <p className="text-sm text-red-600 font-medium">{t.form.cannotModify}</p>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirmDialog(false)}
                 className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
               >
-                继续填写
+                {t.form.continueFilling}
               </button>
               <button
                 onClick={confirmEarlySubmit}
                 className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
               >
-                确认提交
+                {t.form.confirmSubmit}
               </button>
             </div>
           </div>

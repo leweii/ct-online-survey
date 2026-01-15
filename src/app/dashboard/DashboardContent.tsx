@@ -3,7 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SurveyCard } from "@/components/SurveyCard";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Survey } from "@/types/database";
+
+const CREATOR_NAME_KEY = "survey_creator_name";
 
 interface SurveyWithCount extends Survey {
   responseCount: number;
@@ -12,12 +15,23 @@ interface SurveyWithCount extends Survey {
 export function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useLanguage();
   const creatorCode = searchParams.get("code") || "";
 
   const [surveys, setSurveys] = useState<SurveyWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [codeInput, setCodeInput] = useState(creatorCode);
+
+  // Load creator name from localStorage if no code in URL
+  useEffect(() => {
+    if (!creatorCode) {
+      const saved = localStorage.getItem(CREATOR_NAME_KEY);
+      if (saved) {
+        setCodeInput(saved);
+      }
+    }
+  }, [creatorCode]);
 
   const fetchSurveys = useCallback(async (code: string) => {
     if (!code) {
@@ -49,11 +63,11 @@ export function DashboardContent() {
 
       setSurveys(surveysWithCounts);
     } catch {
-      setError("加载问卷失败");
+      setError(t.survey.loadFailed);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t.survey.loadFailed]);
 
   useEffect(() => {
     if (creatorCode) {
@@ -99,17 +113,17 @@ export function DashboardContent() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <h1 className="text-2xl font-bold text-center mb-6">创建者仪表盘</h1>
+          <h1 className="text-2xl font-bold text-center mb-6">{t.dashboard.title}</h1>
           <form onSubmit={handleCodeSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                输入您的创建者名称
+                {t.dashboard.enterNameLabel}
               </label>
               <input
                 type="text"
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value)}
-                placeholder="您的创建者名称（如：胖墩墩）"
+                placeholder={t.dashboard.namePlaceholder}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -117,14 +131,14 @@ export function DashboardContent() {
               type="submit"
               className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              查看问卷
+              {t.dashboard.viewSurveys}
             </button>
           </form>
           <button
             onClick={() => router.push("/")}
             className="w-full mt-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
           >
-            返回首页
+            {t.returnHome}
           </button>
         </div>
       </div>
@@ -134,30 +148,34 @@ export function DashboardContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b px-4 py-4">
+      <header className="bg-white border-b px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">创建者仪表盘</h1>
-            <p className="text-sm text-gray-500">名称：{creatorCode}</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/")}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-lg font-semibold">{t.dashboard.title}</h1>
+              <p className="text-sm text-gray-500">{t.dashboard.name}{creatorCode}</p>
+            </div>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => router.push(`/dashboard/chat?code=${encodeURIComponent(creatorCode)}`)}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
-              数据分析
+              {t.dashboard.dataAnalysis}
             </button>
             <button
               onClick={() => router.push("/create")}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              创建问卷
-            </button>
-            <button
-              onClick={() => router.push("/")}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              首页
+              {t.dashboard.createSurvey}
             </button>
           </div>
         </div>
@@ -168,7 +186,7 @@ export function DashboardContent() {
         {loading ? (
           <div className="text-center py-12">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">加载问卷中...</p>
+            <p className="text-gray-600">{t.dashboard.loadingSurveys}</p>
           </div>
         ) : error ? (
           <div className="text-center py-12">
@@ -177,17 +195,17 @@ export function DashboardContent() {
               onClick={() => fetchSurveys(creatorCode)}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              重试
+              {t.retry}
             </button>
           </div>
         ) : surveys.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">未找到此创建者名称关联的问卷</p>
+            <p className="text-gray-600 mb-4">{t.dashboard.noSurveysFound}</p>
             <button
               onClick={() => router.push("/create")}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              创建您的第一份问卷
+              {t.dashboard.createFirst}
             </button>
           </div>
         ) : (

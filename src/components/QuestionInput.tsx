@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Question } from "@/types/database";
 
 interface QuestionInputProps {
@@ -20,6 +21,8 @@ export function QuestionInput({
   disabled = false,
   inline = false,
 }: QuestionInputProps) {
+  const { t } = useLanguage();
+
   const baseInputClass = inline
     ? "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
     : "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500";
@@ -39,7 +42,7 @@ export function QuestionInput({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder="Type your answer..."
+          placeholder={t.question.typeAnswer}
           rows={inline ? 2 : 3}
           className={`${baseInputClass} resize-none`}
         />
@@ -105,22 +108,25 @@ export function QuestionInput({
     case "yes_no":
       return (
         <div className={`flex gap-3 ${inline ? "mt-2" : ""}`}>
-          {["Yes", "No"].map((option) => (
+          {[
+            { key: "yes", label: t.question.yes },
+            { key: "no", label: t.question.no },
+          ].map((option) => (
             <button
-              key={option}
+              key={option.key}
               type="button"
               onClick={() => {
-                onChange(option.toLowerCase());
+                onChange(option.key);
                 if (onSubmit) setTimeout(onSubmit, 100);
               }}
               disabled={disabled}
               className={`flex-1 py-3 px-4 rounded-lg border-2 font-medium transition-colors ${
-                value === option.toLowerCase()
+                value === option.key
                   ? "border-blue-500 bg-blue-500 text-white"
                   : "border-gray-300 hover:border-blue-400"
               } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
-              {option}
+              {option.label}
             </button>
           ))}
         </div>
@@ -136,7 +142,7 @@ export function QuestionInput({
           disabled={disabled}
           min={question.validation?.min}
           max={question.validation?.max}
-          placeholder="Enter a number..."
+          placeholder={t.question.enterNumber}
           className={baseInputClass}
         />
       );

@@ -35,5 +35,7 @@ export function generateCSV(questions: Question[], responses: Response[]): strin
       return row.map(escapeCSV).join(",");
     });
 
-  return [headers.map(escapeCSV).join(","), ...rows].join("\n");
+  // Add UTF-8 BOM for Excel compatibility with Chinese characters
+  const BOM = "\uFEFF";
+  return BOM + [headers.map(escapeCSV).join(","), ...rows].join("\n");
 }

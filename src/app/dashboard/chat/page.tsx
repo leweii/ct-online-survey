@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Survey, Response as SurveyResponse } from "@/types/database";
 
 interface Message {
@@ -11,7 +12,6 @@ interface Message {
 }
 
 interface Stats {
-  totalSurveys: number;
   totalResponses: number;
   completedResponses: number;
   partialResponses: number;
@@ -22,15 +22,56 @@ interface Stats {
 function AnalyticsChatContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t, language } = useLanguage();
   const creatorCode = searchParams.get("code") || "";
+  const initialSurveyId = searchParams.get("survey") || "";
 
   const [surveys, setSurveys] = useState<Survey[]>([]);
-  const [responses, setResponses] = useState<SurveyResponse[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [allResponses, setAllResponses] = useState<SurveyResponse[]>([]);
+  const [selectedSurveyId, setSelectedSurveyId] = useState<string>(initialSurveyId);
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+
+  // Track which surveys have been initialized to avoid re-fetching
+  const initializedSurveys = useRef<Set<string>>(new Set());
+
+  // Get selected survey and its responses
+  const selectedSurvey = useMemo(() => {
+    return surveys.find(s => s.id === selectedSurveyId) || null;
+  }, [surveys, selectedSurveyId]);
+
+  const filteredResponses = useMemo(() => {
+    if (!selectedSurveyId) return [];
+    return allResponses.filter(r => r.survey_id === selectedSurveyId);
+  }, [allResponses, selectedSurveyId]);
+
+  // Calculate stats for selected survey
+  const stats = useMemo<Stats | null>(() => {
+    if (!selectedSurveyId) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayResponses = filteredResponses.filter(r => {
+      const responseDate = new Date(r.started_at);
+      return responseDate >= today;
+    }).length;
+
+    const completedResponses = filteredResponses.filter(r => r.status === "completed").length;
+    const partialResponses = filteredResponses.filter(r => r.status === "partial").length;
+
+    return {
+      totalResponses: filteredResponses.length,
+      completedResponses,
+      partialResponses,
+      completionRate: filteredResponses.length > 0
+        ? Math.round((completedResponses / filteredResponses.length) * 100)
+        : 0,
+      todayResponses,
+    };
+  }, [filteredResponses, selectedSurveyId]);
 
   // Fetch data on mount
   useEffect(() => {
@@ -47,51 +88,25 @@ function AnalyticsChatContent() {
         const surveysData: Survey[] = await surveysRes.json();
         setSurveys(surveysData);
 
+        // Auto-select first survey if none selected
+        if (!initialSurveyId && surveysData.length > 0) {
+          setSelectedSurveyId(surveysData[0].id);
+        }
+
         // Fetch responses for each survey
-        const allResponses: SurveyResponse[] = [];
+        const responses: SurveyResponse[] = [];
         for (const survey of surveysData) {
           try {
             const resRes = await fetch(`/api/surveys/${survey.id}/responses`);
             if (resRes.ok) {
               const responsesData = await resRes.json();
-              allResponses.push(...responsesData);
+              responses.push(...responsesData);
             }
           } catch {
             // Continue with other surveys
           }
         }
-        setResponses(allResponses);
-
-        // Calculate stats
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayResponses = allResponses.filter(r => {
-          const responseDate = new Date(r.started_at);
-          return responseDate >= today;
-        }).length;
-
-        const completedResponses = allResponses.filter(r => r.status === "completed").length;
-        const partialResponses = allResponses.filter(r => r.status === "partial").length;
-
-        setStats({
-          totalSurveys: surveysData.length,
-          totalResponses: allResponses.length,
-          completedResponses,
-          partialResponses,
-          completionRate: allResponses.length > 0
-            ? Math.round((completedResponses / allResponses.length) * 100)
-            : 0,
-          todayResponses,
-        });
-
-        // Add welcome message
-        setMessages([
-          {
-            id: "welcome",
-            role: "assistant",
-            content: `您好！我是数据分析助手。根据您的问卷数据，我可以帮您分析：\n\n- 问卷回复统计\n- 各问题的回答分布\n- 数据趋势分析\n\n您可以尝试问我：\n- "哪个问卷回复最多？"\n- "今天收到了多少回复？"\n- "回复完成率如何？"`,
-          },
-        ]);
+        setAllResponses(responses);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -100,10 +115,82 @@ function AnalyticsChatContent() {
     }
 
     fetchData();
-  }, [creatorCode]);
+  }, [creatorCode, initialSurveyId]);
+
+  // Fetch initial AI analysis when survey changes
+  useEffect(() => {
+    async function fetchInitialAnalysis() {
+      if (!selectedSurvey) return;
+
+      // Skip if already initialized for this survey
+      if (initializedSurveys.current.has(selectedSurvey.id)) {
+        return;
+      }
+
+      setIsInitializing(true);
+      setMessages([]); // Clear previous messages
+
+      try {
+        const response = await fetch("/api/chat/analytics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: "",
+            isInit: true,
+            language,
+            creatorCode,
+            context: {
+              surveys: [{
+                id: selectedSurvey.id,
+                title: selectedSurvey.title,
+                description: selectedSurvey.description,
+                questions: selectedSurvey.questions,
+                status: selectedSurvey.status,
+              }],
+              responses: filteredResponses.map(r => ({
+                survey_id: r.survey_id,
+                answers: r.answers,
+                status: r.status,
+                started_at: r.started_at,
+              })),
+              stats,
+            },
+          }),
+        });
+
+        if (!response.ok) throw new Error("Failed to get initial analysis");
+
+        const data = await response.json();
+
+        setMessages([{
+          id: "initial-analysis",
+          role: "assistant",
+          content: data.text,
+        }]);
+
+        // Mark this survey as initialized
+        initializedSurveys.current.add(selectedSurvey.id);
+      } catch (error) {
+        console.error("Error fetching initial analysis:", error);
+        // Fallback to static message on error
+        setMessages([{
+          id: "welcome",
+          role: "assistant",
+          content: t.analytics.welcomeMessage.replace("{title}", selectedSurvey.title),
+        }]);
+      } finally {
+        setIsInitializing(false);
+      }
+    }
+
+    // Only fetch if not currently loading data
+    if (!loading && selectedSurvey) {
+      fetchInitialAnalysis();
+    }
+  }, [selectedSurvey, loading, language, creatorCode, filteredResponses, stats, t.analytics.welcomeMessage]);
 
   const handleSendMessage = useCallback(async () => {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading || !selectedSurvey) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -121,15 +208,17 @@ function AnalyticsChatContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage.content,
+          language,
           creatorCode,
           context: {
-            surveys: surveys.map(s => ({
-              id: s.id,
-              title: s.title,
-              questions: s.questions,
-              status: s.status,
-            })),
-            responses: responses.map(r => ({
+            surveys: [{
+              id: selectedSurvey.id,
+              title: selectedSurvey.title,
+              description: selectedSurvey.description,
+              questions: selectedSurvey.questions,
+              status: selectedSurvey.status,
+            }],
+            responses: filteredResponses.map(r => ({
               survey_id: r.survey_id,
               answers: r.answers,
               status: r.status,
@@ -159,25 +248,30 @@ function AnalyticsChatContent() {
         {
           id: Date.now().toString() + "-error",
           role: "assistant",
-          content: "抱歉，分析数据时遇到了问题。请重试。",
+          content: t.analytics.analysisError,
         },
       ]);
     } finally {
       setIsLoading(false);
     }
-  }, [inputValue, isLoading, creatorCode, surveys, responses, stats]);
+  }, [inputValue, isLoading, creatorCode, selectedSurvey, filteredResponses, stats, language, t.analytics.analysisError]);
+
+  // Reset initialized surveys when language changes to get new analysis
+  useEffect(() => {
+    initializedSurveys.current.clear();
+  }, [language]);
 
   if (!creatorCode) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-xl font-bold mb-4">需要创建者代码</h1>
-          <p className="text-gray-600 mb-4">请从仪表盘进入数据分析页面</p>
+          <h1 className="text-xl font-bold mb-4">{t.analytics.needCreatorName}</h1>
+          <p className="text-gray-600 mb-4">{t.analytics.accessFromDashboard}</p>
           <button
             onClick={() => router.push("/dashboard")}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            返回仪表盘
+            {t.analytics.returnToDashboard}
           </button>
         </div>
       </div>
@@ -189,7 +283,7 @@ function AnalyticsChatContent() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">加载数据中...</p>
+          <p className="text-gray-600">{t.analytics.loadingData}</p>
         </div>
       </div>
     );
@@ -209,34 +303,70 @@ function AnalyticsChatContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 className="text-lg font-semibold">数据分析助手</h1>
+            <h1 className="text-lg font-semibold">{t.analytics.title}</h1>
           </div>
+          {/* Survey Selector */}
+          <select
+            value={selectedSurveyId}
+            onChange={(e) => setSelectedSurveyId(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[200px]"
+            disabled={isInitializing}
+          >
+            {surveys.length === 0 ? (
+              <option value="">{t.analytics.noSurveys}</option>
+            ) : (
+              surveys.map(survey => (
+                <option key={survey.id} value={survey.id}>
+                  {survey.title}
+                </option>
+              ))
+            )}
+          </select>
         </div>
       </header>
 
       {/* Stats Card */}
-      {stats && (
+      {stats && selectedSurvey && (
         <div className="max-w-4xl mx-auto w-full px-4 py-4">
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <h2 className="text-sm font-medium text-gray-500 mb-3">统计概览</h2>
+            <h2 className="text-sm font-medium text-gray-500 mb-3">
+              {selectedSurvey.title} - {t.analytics.statsOverview}
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <div className="text-2xl font-bold text-gray-900">{stats.totalSurveys}</div>
-                <div className="text-sm text-gray-500">问卷总数</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.totalResponses}</div>
+                <div className="text-sm text-gray-500">{t.analytics.totalResponses}</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">{stats.totalResponses}</div>
-                <div className="text-sm text-gray-500">回复总数</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.completedResponses}</div>
+                <div className="text-sm text-gray-500">{t.analytics.completed}</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-600">{stats.completionRate}%</div>
-                <div className="text-sm text-gray-500">完成率</div>
+                <div className="text-sm text-gray-500">{t.analytics.completionRate}</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-600">{stats.todayResponses}</div>
-                <div className="text-sm text-gray-500">今日新增</div>
+                <div className="text-sm text-gray-500">{t.analytics.todayNew}</div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* No survey selected or no responses */}
+      {!selectedSurvey && surveys.length > 0 && (
+        <div className="max-w-4xl mx-auto w-full px-4 py-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+            <p className="text-yellow-800">{t.analytics.selectSurvey}</p>
+          </div>
+        </div>
+      )}
+
+      {surveys.length === 0 && (
+        <div className="max-w-4xl mx-auto w-full px-4 py-4">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
+            <p className="text-gray-600">{t.analytics.noSurveyData}</p>
           </div>
         </div>
       )}
@@ -260,13 +390,18 @@ function AnalyticsChatContent() {
               </div>
             </div>
           ))}
-          {isLoading && (
+          {(isLoading || isInitializing) && (
             <div className="flex justify-start">
               <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
+                  {isInitializing && (
+                    <span className="text-sm text-gray-500">{t.analytics.analyzing}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -282,20 +417,20 @@ function AnalyticsChatContent() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !isLoading) {
+              if (e.key === "Enter" && !isLoading && !isInitializing) {
                 handleSendMessage();
               }
             }}
-            placeholder="输入您的问题..."
+            placeholder={selectedSurvey ? t.analytics.inputPlaceholder : t.analytics.selectFirst}
             className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isLoading}
+            disabled={isLoading || isInitializing || !selectedSurvey}
           />
           <button
             onClick={handleSendMessage}
-            disabled={isLoading || !inputValue.trim()}
+            disabled={isLoading || isInitializing || !inputValue.trim() || !selectedSurvey}
             className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            发送
+            {t.send}
           </button>
         </div>
       </div>
@@ -304,12 +439,14 @@ function AnalyticsChatContent() {
 }
 
 export default function AnalyticsChatPage() {
+  const { t } = useLanguage();
+
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">加载中...</p>
+          <p className="text-gray-600">{t.loading}</p>
         </div>
       </div>
     }>

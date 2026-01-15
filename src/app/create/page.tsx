@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChatInterface, Message } from "@/components/ChatInterface";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Question } from "@/types/database";
 
 interface SurveyState {
@@ -13,22 +14,30 @@ interface SurveyState {
   questions: Question[];
   creator_code: string;  // Legacy
   creator_name?: string;  // Fun pet name for creator
+  custom_creator_name?: string;  // User-provided custom name
   isFinalized: boolean;
 }
 
-export default function CreateSurveyPage() {
+function CreateSurveyContent() {
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "您好！我是您的问卷设计助手。请描述您的问卷主题（例如：\"餐厅顾客满意度调查\"），我会为您生成一套包含 21-28 个问题的完整专业问卷供您审阅，您可以根据需要删减问题。",
-    },
-  ]);
+  const searchParams = useSearchParams();
+  const { t } = useLanguage();
+  const customCreatorName = searchParams.get("creator") || "";
+  const [messages, setMessages] = useState<Message[]>([]);
   const [surveyState, setSurveyState] = useState<SurveyState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+
+  // Set initial welcome message when t changes
+  useEffect(() => {
+    setMessages([
+      {
+        id: "welcome",
+        role: "assistant",
+        content: t.create.welcomeMessage,
+      },
+    ]);
+  }, [t.create.welcomeMessage]);
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -51,6 +60,7 @@ export default function CreateSurveyPage() {
               content: m.content,
             })),
             surveyState,
+            customCreatorName: customCreatorName || undefined,
           }),
         });
 
@@ -87,7 +97,10 @@ export default function CreateSurveyPage() {
                     const shortCode = data.surveyState.short_code;
                     const creatorName = data.surveyState.creator_name;
                     const surveyUrl = `${window.location.origin}/survey/${shortCode}`;
-                    accumulatedText += `\n\n问卷已创建成功！以下是详细信息：\n\n**问卷代码：** ${shortCode}\n\n**问卷链接：** ${surveyUrl}\n\n**创建者名称：** ${creatorName}\n\n请妥善保存创建者名称，以便后续查看仪表盘和回复数据。`;
+                    accumulatedText += "\n\n" + t.create.surveyCreated
+                      .replace("{shortCode}", shortCode)
+                      .replace("{surveyUrl}", surveyUrl)
+                      .replace("{creatorName}", creatorName);
                   }
                 }
               } catch {
@@ -115,8 +128,7 @@ export default function CreateSurveyPage() {
           {
             id: Date.now().toString() + "-error",
             role: "assistant",
-            content:
-              "抱歉，遇到了一些问题。请重试。",
+            content: t.create.errorMessage,
           },
         ]);
       } finally {
@@ -124,7 +136,7 @@ export default function CreateSurveyPage() {
         setStreamingContent("");
       }
     },
-    [messages, surveyState]
+    [messages, surveyState, customCreatorName, t.create.surveyCreated, t.create.errorMessage]
   );
 
   return (
@@ -150,11 +162,11 @@ export default function CreateSurveyPage() {
               />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold">创建问卷</h1>
+          <h1 className="text-lg font-semibold">{t.create.title}</h1>
         </div>
         {surveyState?.title && (
           <span className="text-sm text-gray-500">
-            {surveyState.questions.length} 个问题
+            {surveyState.questions.length} {t.create.questionsCount}
           </span>
         )}
       </header>
@@ -165,10 +177,27 @@ export default function CreateSurveyPage() {
           messages={messages}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
-          placeholder="输入您的回复..."
+          placeholder={t.create.inputPlaceholder}
           streamingContent={streamingContent}
         />
       </div>
     </div>
+  );
+}
+
+export default function CreateSurveyPage() {
+  const { t } = useLanguage();
+
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">{t.loading}</p>
+        </div>
+      </div>
+    }>
+      <CreateSurveyContent />
+    </Suspense>
   );
 }

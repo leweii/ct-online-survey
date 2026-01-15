@@ -1,11 +1,15 @@
 "use client";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 interface ModeSelectorProps {
   mode: "create" | "take";
   onModeChange: (mode: "create" | "take") => void;
 }
 
 export function ModeSelector({ mode, onModeChange }: ModeSelectorProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="flex bg-gray-100 p-1 rounded-full">
       <button
@@ -16,7 +20,7 @@ export function ModeSelector({ mode, onModeChange }: ModeSelectorProps) {
             : "text-gray-600 hover:text-gray-800"
         }`}
       >
-        创建问卷
+        {t.modes.createSurvey}
       </button>
       <button
         onClick={() => onModeChange("take")}
@@ -26,7 +30,7 @@ export function ModeSelector({ mode, onModeChange }: ModeSelectorProps) {
             : "text-gray-600 hover:text-gray-800"
         }`}
       >
-        填写问卷
+        {t.modes.takeSurvey}
       </button>
     </div>
   );

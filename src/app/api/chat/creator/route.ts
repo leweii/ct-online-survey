@@ -90,7 +90,7 @@ const CREATOR_SYSTEM_PROMPT = `You are a professional survey design expert. You 
 
 export async function POST(request: Request) {
   try {
-    const { messages, surveyState: incomingState } = await request.json();
+    const { messages, surveyState: incomingState, customCreatorName } = await request.json();
 
     // Initialize or use existing state
     const surveyState: SurveyState = incomingState || {
@@ -200,7 +200,8 @@ export async function POST(request: Request) {
                   // Generate new identifiers
                   const shortCode = await generateUniqueShortCode(db);
                   const language = updatedState.language || "zh";
-                  const creatorName = await generateUniqueCreatorName(db, language);
+                  // Use custom creator name if provided, otherwise generate a random one
+                  const creatorName = customCreatorName?.trim() || await generateUniqueCreatorName(db, language);
 
                   const { data: survey } = await db
                     .from("surveys")
