@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { nanoid } from "nanoid";
+
+
+const db = supabase as any;
+
+// POST /api/responses - Start a new response session
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { survey_id, respondent_id } = body;
+
+    if (!survey_id) {
+      return NextResponse.json(
+        { error: "survey_id is required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify survey exists and is active
+    const { data: survey, error: surveyError } = await db
+      .from("surveys")
+      .select("id, status")
+      .eq("id", survey_id)
+      .single();
+
+    if (surveyError || !survey) {
+      return NextResponse.json({ error: "Survey not found" }, { status: 404 });
+    }
+
+    if (survey.status !== "active") {
+      return NextResponse.json(
+        { error: "Survey is not accepting responses" },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await db
+      .from("responses")
+      .insert({
+        survey_id,
+        respondent_id: respondent_id || nanoid(12),
+        answers: {},
+        status: "in_progress",
+        current_question_index: 0,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+}
