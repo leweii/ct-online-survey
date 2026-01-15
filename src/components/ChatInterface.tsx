@@ -17,6 +17,7 @@ interface ChatInterfaceProps {
   placeholder?: string;
   streamingContent?: string;
   hideInput?: boolean;
+  aiLabel?: string;
 }
 
 export function ChatInterface({
@@ -26,6 +27,7 @@ export function ChatInterface({
   placeholder,
   streamingContent,
   hideInput = false,
+  aiLabel,
 }: ChatInterfaceProps) {
   const { t } = useLanguage();
   const [input, setInput] = useState("");
@@ -53,6 +55,7 @@ export function ChatInterface({
             key={message.id}
             role={message.role}
             content={message.content}
+            aiLabel={aiLabel}
           />
         ))}
         {/* Streaming content */}
@@ -61,6 +64,7 @@ export function ChatInterface({
             role="assistant"
             content={streamingContent}
             isStreaming={true}
+            aiLabel={aiLabel}
           />
         )}
         {/* Loading indicator when waiting for response */}
@@ -68,7 +72,7 @@ export function ChatInterface({
           <div className="py-2">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-base">🤖</span>
-              <span className="text-sm font-medium text-gray-700">{t.chat.aiLabel}</span>
+              <span className="text-sm font-medium text-gray-700">{aiLabel || t.chat.aiLabel}</span>
             </div>
             <div className="pl-7 flex items-center gap-2 text-gray-500">
               <div className="flex gap-1">

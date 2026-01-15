@@ -136,6 +136,9 @@ export const translations = {
     chat: {
       aiThinking: "AI is thinking...",
       aiLabel: "AI",
+      designerLabel: "Designer",
+      assistantLabel: "Assistant",
+      analystLabel: "Analyst",
       youLabel: "You",
     },
 
@@ -151,6 +154,16 @@ export const translations = {
       confirmValue: "Confirm",
       yes: "Yes",
       no: "No",
+    },
+
+    // Verification
+    verification: {
+      title: "Security Verification",
+      description: "Please complete the verification to continue",
+      verifying: "Verifying...",
+      failed: "Verification failed, please try again",
+      error: "Verification error, please refresh the page",
+      expired: "Verification expired, please try again",
     },
   },
 
@@ -289,6 +302,9 @@ export const translations = {
     chat: {
       aiThinking: "AI 正在思考...",
       aiLabel: "AI",
+      designerLabel: "设计师",
+      assistantLabel: "助手",
+      analystLabel: "分析师",
       youLabel: "你",
     },
 
@@ -304,6 +320,16 @@ export const translations = {
       confirmValue: "确认",
       yes: "是",
       no: "否",
+    },
+
+    // Verification
+    verification: {
+      title: "安全验证",
+      description: "请完成验证以继续",
+      verifying: "验证中...",
+      failed: "验证失败，请重试",
+      error: "验证出错，请刷新页面",
+      expired: "验证已过期，请重试",
     },
   },
 };

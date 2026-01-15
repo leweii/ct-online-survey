@@ -3,6 +3,7 @@
 import { useState, useCallback, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChatInterface, Message } from "@/components/ChatInterface";
+import { TurnstileVerification, isVerified } from "@/components/TurnstileVerification";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Question } from "@/types/database";
 
@@ -27,6 +28,7 @@ function CreateSurveyContent() {
   const [surveyState, setSurveyState] = useState<SurveyState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+  const [verified, setVerified] = useState(() => isVerified("create"));
 
   // Set initial welcome message when t changes
   useEffect(() => {
@@ -139,6 +141,16 @@ function CreateSurveyContent() {
     [messages, surveyState, customCreatorName, t.create.surveyCreated, t.create.errorMessage]
   );
 
+  // Show verification gate if not verified
+  if (!verified) {
+    return (
+      <TurnstileVerification
+        context="create"
+        onVerified={() => setVerified(true)}
+      />
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
@@ -179,6 +191,7 @@ function CreateSurveyContent() {
           isLoading={isLoading}
           placeholder={t.create.inputPlaceholder}
           streamingContent={streamingContent}
+          aiLabel={t.chat.designerLabel}
         />
       </div>
     </div>

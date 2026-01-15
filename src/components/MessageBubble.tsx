@@ -7,6 +7,7 @@ interface MessageBubbleProps {
   role: "user" | "assistant";
   content: string;
   isStreaming?: boolean;
+  aiLabel?: string;
 }
 
 // Clean ACTION tags from content
@@ -14,7 +15,7 @@ function cleanContent(text: string): string {
   return text.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, "").trim();
 }
 
-export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps) {
+export function MessageBubble({ role, content, isStreaming, aiLabel }: MessageBubbleProps) {
   const { t } = useLanguage();
   const isUser = role === "user";
   const cleanedContent = cleanContent(content);
@@ -25,7 +26,7 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
       <div className="flex items-center gap-2 mb-1">
         <span className="text-base">{isUser ? "👤" : "🤖"}</span>
         <span className="text-sm font-medium text-gray-700">
-          {isUser ? t.chat.youLabel : t.chat.aiLabel}
+          {isUser ? t.chat.youLabel : (aiLabel || t.chat.aiLabel)}
         </span>
       </div>
 

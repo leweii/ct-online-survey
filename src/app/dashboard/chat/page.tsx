@@ -380,13 +380,14 @@ function AnalyticsChatContent() {
               key={message.id}
               role={message.role}
               content={message.content}
+              aiLabel={t.chat.analystLabel}
             />
           ))}
           {(isLoading || isInitializing) && (
             <div className="py-2">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-base">🤖</span>
-                <span className="text-sm font-medium text-gray-700">{t.chat.aiLabel}</span>
+                <span className="text-sm font-medium text-gray-700">{t.chat.analystLabel}</span>
               </div>
               <div className="pl-7 flex items-center gap-2 text-gray-500">
                 <div className="flex gap-1">

@@ -6,6 +6,7 @@ import { ChatInterface, Message } from "@/components/ChatInterface";
 import { ResponseModeSelector } from "@/components/ResponseModeSelector";
 import { FormResponse } from "@/components/FormResponse";
 import { QuestionInput } from "@/components/QuestionInput";
+import { TurnstileVerification, isVerified } from "@/components/TurnstileVerification";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Survey, Question } from "@/types/database";
 
@@ -41,6 +42,9 @@ export default function SurveyResponsePage() {
   // Form mode state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formCompleted, setFormCompleted] = useState(false);
+
+  // Verification state
+  const [verified, setVerified] = useState(() => isVerified("survey"));
 
   // Fetch survey on mount
   useEffect(() => {
@@ -241,6 +245,16 @@ export default function SurveyResponsePage() {
     }
   };
 
+  // Show verification gate if not verified
+  if (!verified) {
+    return (
+      <TurnstileVerification
+        context="survey"
+        onVerified={() => setVerified(true)}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -351,6 +365,7 @@ export default function SurveyResponsePage() {
             }
             streamingContent={streamingContent}
             hideInput
+            aiLabel={t.chat.assistantLabel}
           />
         </div>
 
