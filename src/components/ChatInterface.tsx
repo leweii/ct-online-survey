@@ -93,8 +93,7 @@ export function ChatInterface({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={placeholder || t.question.typeAnswer}
-              disabled={isLoading}
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 text-sm"
+              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
             <button
               type="submit"

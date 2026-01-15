@@ -411,13 +411,13 @@ function AnalyticsChatContent() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !isLoading && !isInitializing) {
+              if (e.key === "Enter" && !isLoading && !isInitializing && selectedSurvey) {
                 handleSendMessage();
               }
             }}
             placeholder={selectedSurvey ? t.analytics.inputPlaceholder : t.analytics.selectFirst}
             className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 text-sm"
-            disabled={isLoading || isInitializing || !selectedSurvey}
+            disabled={!selectedSurvey}
           />
           <button
             onClick={handleSendMessage}
