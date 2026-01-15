@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { nanoid } from "nanoid";
-
+import { isUUID, isShortCode } from "@/lib/identifiers";
 
 const db = supabase as any;
 
@@ -18,12 +18,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Build query - support both UUID and short_code
+    let query = db.from("surveys").select("id, status");
+
+    if (isUUID(survey_id)) {
+      query = query.eq("id", survey_id);
+    } else if (isShortCode(survey_id)) {
+      query = query.ilike("short_code", survey_id);
+    } else {
+      // Try both as fallback
+      query = query.or(`id.eq.${survey_id},short_code.ilike.${survey_id}`);
+    }
+
     // Verify survey exists and is active
-    const { data: survey, error: surveyError } = await db
-      .from("surveys")
-      .select("id, status")
-      .eq("id", survey_id)
-      .single();
+    const { data: survey, error: surveyError } = await query.single();
 
     if (surveyError || !survey) {
       return NextResponse.json({ error: "Survey not found" }, { status: 404 });
@@ -36,12 +44,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Use the actual UUID from survey lookup
+    const actualSurveyId = survey.id;
+
     // If answers and status are provided, this is a direct submission (from form mode)
     if (answers && (responseStatus === "completed" || responseStatus === "partial")) {
       const { data, error } = await db
         .from("responses")
         .insert({
-          survey_id,
+          survey_id: actualSurveyId,
           respondent_id: respondent_id || nanoid(12),
           answers,
           status: responseStatus,
@@ -62,7 +73,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await db
       .from("responses")
       .insert({
-        survey_id,
+        survey_id: actualSurveyId,
         respondent_id: respondent_id || nanoid(12),
         answers: {},
         status: "in_progress",

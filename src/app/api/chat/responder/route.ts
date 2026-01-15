@@ -2,7 +2,7 @@ import { streamText } from "ai";
 import { geminiModel, parseActions, removeActionTags } from "@/lib/ai";
 import { supabase } from "@/lib/supabase";
 import type { Question, Survey } from "@/types/database";
-
+import { isUUID, isShortCode } from "@/lib/identifiers";
 
 const db = supabase as any;
 
@@ -106,12 +106,18 @@ export async function POST(request: Request) {
   try {
     const { messages, responseState: incomingState, surveyId } = await request.json();
 
-    // Get survey
-    const { data: survey } = await db
-      .from("surveys")
-      .select("*")
-      .eq("id", surveyId)
-      .single();
+    // Get survey - support both UUID and short_code
+    let query = db.from("surveys").select("*");
+
+    if (isUUID(surveyId)) {
+      query = query.eq("id", surveyId);
+    } else if (isShortCode(surveyId)) {
+      query = query.ilike("short_code", surveyId);
+    } else {
+      query = query.or(`id.eq.${surveyId},short_code.ilike.${surveyId}`);
+    }
+
+    const { data: survey } = await query.single();
 
     if (!survey) {
       return new Response(JSON.stringify({ error: "Survey not found" }), {
@@ -119,6 +125,9 @@ export async function POST(request: Request) {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    // Use actual UUID for database operations
+    const actualSurveyId = survey.id;
 
     const questions = survey.questions as Question[];
     if (questions.length === 0) {
@@ -131,7 +140,7 @@ export async function POST(request: Request) {
     // Initialize or use existing state
     let responseState: ResponseState = incomingState || {
       responseId: "",
-      surveyId,
+      surveyId: actualSurveyId,
       currentQuestionIndex: 0,
       answers: {},
       isCompleted: false,
@@ -142,7 +151,7 @@ export async function POST(request: Request) {
       const { data: newResponse } = await db
         .from("responses")
         .insert({
-          survey_id: surveyId,
+          survey_id: actualSurveyId,
           answers: {},
           status: "in_progress",
           current_question_index: 0,
