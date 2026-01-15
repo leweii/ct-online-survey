@@ -19,9 +19,19 @@ function buildResponderPrompt(
   currentQuestion: Question,
   questionIndex: number,
   totalQuestions: number,
-  previousAnswers: Record<string, unknown>
+  previousAnswers: Record<string, unknown>,
+  questions: Question[]
 ): string {
+  const surveyLanguage = survey.settings?.language || "en";
+
   let prompt = `You are a friendly survey assistant helping someone complete the survey "${survey.title}".
+
+## IMPORTANT: Language Handling
+- Survey language: ${surveyLanguage}
+- Default: Respond in the survey's language (${surveyLanguage})
+- If the user types in a DIFFERENT language, adapt your responses to THEIR language
+- However, ALWAYS keep the question text in the original survey language
+- Example: If survey is in Chinese but user types in English, explain in English but show the Chinese question text
 
 Current question (${questionIndex + 1} of ${totalQuestions}):
 - Question: ${currentQuestion.text}
@@ -45,29 +55,49 @@ Current question (${questionIndex + 1} of ${totalQuestions}):
     }
   }
 
+  // Add next question info for auto-advance
+  const isLastQuestion = questionIndex === totalQuestions - 1;
+  let nextQuestionInfo = "";
+  if (!isLastQuestion) {
+    const nextQ = questions[questionIndex + 1];
+    nextQuestionInfo = `\n\nNext question (${questionIndex + 2} of ${totalQuestions}):
+- Question: ${nextQ.text}
+- Type: ${nextQ.type}`;
+    if (nextQ.type === "multiple_choice" && nextQ.options) {
+      nextQuestionInfo += `\n- Options: ${nextQ.options.join(", ")}`;
+    }
+    if (nextQ.type === "rating") {
+      nextQuestionInfo += `\n- Scale: ${nextQ.validation?.min ?? 1} to ${nextQ.validation?.max ?? 5}`;
+    }
+  }
+
   prompt += `
 
 Your responsibilities:
-1. Present the current question conversationally
-2. Validate the user's response based on the question type
+1. Validate the user's response based on the question type
+2. If valid, acknowledge briefly and IMMEDIATELY present the next question
 3. If they ask for clarification, explain the question differently
 4. If they want to go back, allow it
-5. Be encouraging and friendly
+5. Keep responses concise - no unnecessary chatter
 
-IMPORTANT: When processing a valid answer or action, include an ACTION tag at the END of your message.
+IMPORTANT AUTO-ADVANCE: After saving a valid answer, you MUST immediately present the next question in the SAME response. Do NOT wait for the user to ask for it. Keep acknowledgments brief (e.g., "Great!" or "Got it!") then move on.
+${nextQuestionInfo}
+
+IMPORTANT: Include ACTION tags at the END of your message.
 
 Action formats:
 - Save answer: <ACTION>{"type": "save_answer", "questionId": "${currentQuestion.id}", "value": "the answer"}</ACTION>
 - Go back: <ACTION>{"type": "go_back"}</ACTION>
-- Complete survey (only when on last question and answer is valid): <ACTION>{"type": "complete"}</ACTION>
+- Complete survey (only on last question): <ACTION>{"type": "complete"}</ACTION>
 
-For multiple choice, save the actual option text, not the number.
-For yes/no, save "yes" or "no".
-For rating, save the number.
-For date, save in YYYY-MM-DD format.
+Value formats:
+- multiple_choice: save the actual option text, not the number
+- yes_no: save "yes" or "no"
+- rating: save the number
+- date: save in YYYY-MM-DD format
 
-Previous answers in this session: ${Object.keys(previousAnswers).length} questions answered.
-${questionIndex === totalQuestions - 1 ? "This is the LAST question. After a valid answer, complete the survey." : ""}`;
+Previous answers: ${Object.keys(previousAnswers).length} of ${totalQuestions} completed.
+${isLastQuestion ? "This is the LAST question. After a valid answer, include both save_answer AND complete actions." : ""}`;
 
   return prompt;
 }
@@ -131,7 +161,8 @@ export async function POST(request: Request) {
       currentQuestion,
       responseState.currentQuestionIndex,
       questions.length,
-      responseState.answers
+      responseState.answers,
+      questions
     );
 
     const result = streamText({

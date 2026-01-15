@@ -3,7 +3,12 @@
 import { useState, useCallback, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChatInterface, Message } from "@/components/ChatInterface";
+import { ResponseModeSelector } from "@/components/ResponseModeSelector";
+import { FormResponse } from "@/components/FormResponse";
+import { QuestionInput } from "@/components/QuestionInput";
 import type { Survey, Question } from "@/types/database";
+
+type ResponseMode = "selecting" | "form" | "chat";
 
 interface ResponseState {
   responseId: string;
@@ -21,10 +26,19 @@ export default function SurveyResponsePage() {
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<ResponseMode>("selecting");
+
+  // Chat mode state
   const [messages, setMessages] = useState<Message[]>([]);
   const [responseState, setResponseState] = useState<ResponseState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [inlineValue, setInlineValue] = useState<unknown>(undefined);
+
+  // Form mode state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formCompleted, setFormCompleted] = useState(false);
 
   // Fetch survey on mount
   useEffect(() => {
@@ -45,16 +59,6 @@ export default function SurveyResponsePage() {
           return;
         }
         setSurvey(data);
-
-        // Set welcome message
-        const questions = data.questions as Question[];
-        setMessages([
-          {
-            id: "welcome",
-            role: "assistant",
-            content: `Welcome to "${data.title}"!\n\n${data.description || ""}\n\nThis survey has ${questions.length} question${questions.length !== 1 ? "s" : ""}. Ready to begin? Just type "yes" or "start" when you're ready!`,
-          },
-        ]);
       } catch {
         setError("Failed to load survey");
       } finally {
@@ -63,6 +67,45 @@ export default function SurveyResponsePage() {
     }
     fetchSurvey();
   }, [surveyId]);
+
+  const handleSelectMode = (selectedMode: "form" | "chat") => {
+    setMode(selectedMode);
+
+    if (selectedMode === "chat" && survey) {
+      const questions = survey.questions as Question[];
+      setCurrentQuestion(questions[0] || null);
+      setMessages([
+        {
+          id: "welcome",
+          role: "assistant",
+          content: `Welcome! Let's start the survey.\n\n**Question 1 of ${questions.length}:**\n${questions[0]?.text || ""}`,
+        },
+      ]);
+    }
+  };
+
+  const handleFormSubmit = async (answers: Record<string, unknown>) => {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          survey_id: surveyId,
+          answers,
+          status: "completed",
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to submit");
+      setFormCompleted(true);
+    } catch (error) {
+      console.error("Submit error:", error);
+      alert("Failed to submit survey. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -76,6 +119,7 @@ export default function SurveyResponsePage() {
       setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
       setStreamingContent("");
+      setInlineValue(undefined);
 
       try {
         const response = await fetch("/api/chat/responder", {
@@ -119,9 +163,13 @@ export default function SurveyResponsePage() {
                 if (data.done && data.responseState) {
                   setResponseState(data.responseState);
 
-                  // If survey is completed, show thank you message
+                  // Update current question
+                  const questions = survey.questions as Question[];
                   if (data.responseState.isCompleted) {
+                    setCurrentQuestion(null);
                     accumulatedText += "\n\nThank you for completing the survey! Your responses have been saved.";
+                  } else {
+                    setCurrentQuestion(questions[data.responseState.currentQuestionIndex] || null);
                   }
                 }
               } catch {
@@ -160,6 +208,12 @@ export default function SurveyResponsePage() {
     [messages, responseState, survey, surveyId]
   );
 
+  const handleInlineSubmit = () => {
+    if (inlineValue !== undefined && inlineValue !== null && inlineValue !== "") {
+      handleSendMessage(String(inlineValue));
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -188,11 +242,47 @@ export default function SurveyResponsePage() {
     );
   }
 
-  const questions = survey?.questions as Question[] | undefined;
+  if (!survey) return null;
+
+  // Mode selector
+  if (mode === "selecting") {
+    return <ResponseModeSelector survey={survey} onSelectMode={handleSelectMode} />;
+  }
+
+  // Form mode
+  if (mode === "form") {
+    if (formCompleted) {
+      return (
+        <div className="h-screen flex items-center justify-center">
+          <div className="text-center max-w-md p-6">
+            <div className="text-green-500 text-6xl mb-4">&#10003;</div>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Thank You!</h2>
+            <p className="text-gray-600 mb-6">Your responses have been submitted successfully.</p>
+            <button
+              onClick={() => router.push("/")}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Go Home
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <FormResponse
+        survey={survey}
+        onSubmit={handleFormSubmit}
+        isSubmitting={isSubmitting}
+      />
+    );
+  }
+
+  // Chat mode
+  const questions = survey.questions as Question[];
   const progress = responseState
     ? Math.round(
         ((responseState.currentQuestionIndex + (responseState.isCompleted ? 1 : 0)) /
-          (questions?.length || 1)) *
+          questions.length) *
           100
       )
     : 0;
@@ -202,10 +292,10 @@ export default function SurveyResponsePage() {
       {/* Header */}
       <header className="border-b bg-white px-4 py-3">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-lg font-semibold truncate">{survey?.title}</h1>
+          <h1 className="text-lg font-semibold truncate">{survey.title}</h1>
           {responseState && !responseState.isCompleted && (
             <span className="text-sm text-gray-500">
-              {responseState.currentQuestionIndex + 1} / {questions?.length}
+              {responseState.currentQuestionIndex + 1} / {questions.length}
             </span>
           )}
         </div>
@@ -219,19 +309,80 @@ export default function SurveyResponsePage() {
         )}
       </header>
 
-      {/* Chat */}
-      <div className="flex-1 overflow-hidden">
-        <ChatInterface
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-          placeholder={
-            responseState?.isCompleted
-              ? "Survey completed!"
-              : "Type your answer..."
-          }
-          streamingContent={streamingContent}
-        />
+      {/* Chat with inline input */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto">
+          <ChatInterface
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            placeholder={
+              responseState?.isCompleted
+                ? "Survey completed!"
+                : "Type your answer..."
+            }
+            streamingContent={streamingContent}
+            hideInput
+          />
+        </div>
+
+        {/* Inline question input */}
+        {currentQuestion && !responseState?.isCompleted && !isLoading && (
+          <div className="border-t bg-gray-50 p-4">
+            <QuestionInput
+              question={currentQuestion}
+              value={inlineValue}
+              onChange={setInlineValue}
+              onSubmit={handleInlineSubmit}
+              inline
+            />
+            {(currentQuestion.type === "text" || currentQuestion.type === "number") && (
+              <button
+                onClick={handleInlineSubmit}
+                disabled={inlineValue === undefined || inlineValue === null || inlineValue === ""}
+                className="mt-3 w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Submit Answer
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Text input for chat mode */}
+        {!responseState?.isCompleted && (
+          <div className="border-t bg-white p-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Or type your answer here..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isLoading) {
+                    const input = e.target as HTMLInputElement;
+                    if (input.value.trim()) {
+                      handleSendMessage(input.value.trim());
+                      input.value = "";
+                    }
+                  }
+                }}
+                disabled={isLoading}
+              />
+              <button
+                onClick={(e) => {
+                  const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
+                  if (input?.value?.trim()) {
+                    handleSendMessage(input.value.trim());
+                    input.value = "";
+                  }
+                }}
+                disabled={isLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

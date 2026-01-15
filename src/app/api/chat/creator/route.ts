@@ -14,17 +14,25 @@ interface SurveyState {
   questions: Question[];
   creator_code: string;
   isFinalized: boolean;
+  language?: string; // Auto-detected from user input
 }
 
 const CREATOR_SYSTEM_PROMPT = `You are a helpful survey creation assistant. You generate complete surveys from topics.
 
+## IMPORTANT: Language Detection
+- Detect the language the user is using (e.g., Chinese, English, Spanish, etc.)
+- ALWAYS respond in the SAME language as the user
+- Generate survey title, description, and questions in the user's language
+- Include set_language action with the detected language code (e.g., "zh" for Chinese, "en" for English, "es" for Spanish)
+
 ## Flow:
-1. When user describes a topic (e.g., "customer satisfaction for a coffee shop"), generate:
+1. When user describes a topic, detect their language first
+2. Generate in the SAME language:
    - An appropriate survey title
    - A brief description
    - 5-8 relevant questions with appropriate types
-2. Present all generated content to the user for review
-3. Let them remove questions, add questions, or finalize
+3. Present all generated content to the user for review (in their language)
+4. Let them remove questions, add questions, or finalize
 
 ## Question Types:
 - text: Open-ended text response
@@ -37,6 +45,7 @@ const CREATOR_SYSTEM_PROMPT = `You are a helpful survey creation assistant. You 
 ## IMPORTANT: Include ACTION tags at the END of your message. The user won't see them.
 
 ## Action Formats:
+- Set language (ALWAYS include first): <ACTION>{"type": "set_language", "language": "zh"}</ACTION>
 - Set title and description: <ACTION>{"type": "set_title", "title": "Survey Title"}</ACTION><ACTION>{"type": "set_description", "description": "Description text"}</ACTION>
 - Set all questions at once: <ACTION>{"type": "set_questions", "questions": [{"type": "multiple_choice", "text": "Question?", "required": true, "options": ["A", "B", "C"]}, {"type": "rating", "text": "Rate X?", "required": true}]}</ACTION>
 - Add one question: <ACTION>{"type": "add_question", "question": {"type": "text", "text": "Question?", "required": true}}</ACTION>
@@ -44,12 +53,13 @@ const CREATOR_SYSTEM_PROMPT = `You are a helpful survey creation assistant. You 
 - Finalize survey: <ACTION>{"type": "finalize"}</ACTION>
 
 ## Guidelines:
+- ALWAYS detect language and include set_language action in your FIRST response
 - When generating questions, use set_questions to set them all at once (not add_question for each)
 - Mix question types appropriately for the topic
 - Make most questions required, but leave 1-2 optional for open feedback
 - When presenting questions, number them (1, 2, 3...) so user can reference by number
 - When user wants to remove a question, use remove_question with the 0-based index
-- Be conversational and helpful`;
+- Be conversational and helpful - IN THE USER'S LANGUAGE`;
 
 export async function POST(request: Request) {
   try {
@@ -114,6 +124,9 @@ export async function POST(request: Request) {
 
           for (const action of actions) {
             switch (action.type) {
+              case "set_language":
+                updatedState.language = action.language;
+                break;
               case "set_title":
                 updatedState.title = action.title;
                 break;
@@ -164,7 +177,9 @@ export async function POST(request: Request) {
                       description: updatedState.description || null,
                       questions: updatedState.questions,
                       creator_code: updatedState.creator_code,
-                      settings: {},
+                      settings: {
+                        language: updatedState.language || "en",
+                      },
                       status: "active",
                     })
                     .select()

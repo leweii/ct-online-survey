@@ -19,6 +19,7 @@ export interface Question {
 export interface SurveySettings {
   allowAnonymous?: boolean;
   showProgress?: boolean;
+  language?: string; // Language code (e.g., "en", "zh", "es") - auto-detected from creator input
 }
 
 export type SurveyStatus = "draft" | "active" | "closed";
