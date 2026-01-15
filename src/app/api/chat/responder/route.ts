@@ -1,5 +1,5 @@
 import { streamText } from "ai";
-import { geminiModel, parseActions, removeActionTags } from "@/lib/ai";
+import { geminiModel, parseActions, StreamActionBuffer } from "@/lib/ai";
 import { supabase } from "@/lib/supabase";
 import type { Question, Survey } from "@/types/database";
 import { isUUID, isShortCode } from "@/lib/identifiers";
@@ -41,10 +41,21 @@ Current question (${questionIndex + 1} of ${totalQuestions}):
   if (currentQuestion.type === "multiple_choice" && currentQuestion.options) {
     prompt += `\n- Options: ${currentQuestion.options.map((o, i) => `${i + 1}. ${o}`).join(", ")}`;
   }
+  if (currentQuestion.type === "multi_select" && currentQuestion.options) {
+    prompt += `\n- Options (can select multiple): ${currentQuestion.options.map((o, i) => `${i + 1}. ${o}`).join(", ")}`;
+  }
+  if (currentQuestion.type === "dropdown" && currentQuestion.options) {
+    prompt += `\n- Options: ${currentQuestion.options.join(", ")}`;
+  }
   if (currentQuestion.type === "rating") {
     const min = currentQuestion.validation?.min ?? 1;
     const max = currentQuestion.validation?.max ?? 5;
     prompt += `\n- Scale: ${min} to ${max}`;
+  }
+  if (currentQuestion.type === "slider") {
+    const min = currentQuestion.validation?.min ?? 0;
+    const max = currentQuestion.validation?.max ?? 100;
+    prompt += `\n- Slider range: ${min} to ${max}`;
   }
   if (currentQuestion.type === "number" && currentQuestion.validation) {
     if (currentQuestion.validation.min !== undefined) {
@@ -53,6 +64,12 @@ Current question (${questionIndex + 1} of ${totalQuestions}):
     if (currentQuestion.validation.max !== undefined) {
       prompt += `\n- Maximum value: ${currentQuestion.validation.max}`;
     }
+  }
+  if (currentQuestion.type === "email") {
+    prompt += `\n- Format: Valid email address`;
+  }
+  if (currentQuestion.type === "phone") {
+    prompt += `\n- Format: Phone number`;
   }
 
   // Add next question info for auto-advance
@@ -92,9 +109,14 @@ Action formats:
 
 Value formats:
 - multiple_choice: save the actual option text, not the number
+- multi_select: save as JSON array of selected option texts, e.g., ["Option A", "Option C"]
+- dropdown: save the actual option text
 - yes_no: save "yes" or "no"
 - rating: save the number
+- slider: save the number
 - date: save in YYYY-MM-DD format
+- email: save the email address
+- phone: save the phone number
 
 Previous answers: ${Object.keys(previousAnswers).length} of ${totalQuestions} completed.
 ${isLastQuestion ? "This is the LAST question. After a valid answer, include both save_answer AND complete actions." : ""}`;
@@ -182,18 +204,28 @@ export async function POST(request: Request) {
 
     let fullResponse = "";
     const encoder = new TextEncoder();
+    const actionBuffer = new StreamActionBuffer();
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
           for await (const chunk of result.textStream) {
             fullResponse += chunk;
-            const cleanChunk = removeActionTags(chunk);
-            if (cleanChunk) {
+            // Buffer the chunk and get safe text to emit
+            const safeText = actionBuffer.push(chunk);
+            if (safeText) {
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ text: cleanChunk })}\n\n`)
+                encoder.encode(`data: ${JSON.stringify({ text: safeText })}\n\n`)
               );
             }
+          }
+
+          // Flush any remaining buffered content
+          const remaining = actionBuffer.flush();
+          if (remaining) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ text: remaining })}\n\n`)
+            );
           }
 
           // Parse actions from complete response

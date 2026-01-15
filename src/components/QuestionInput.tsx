@@ -78,7 +78,73 @@ export function QuestionInput({
         </div>
       );
 
-    case "rating":
+    case "multi_select": {
+      const selectedValues = Array.isArray(value) ? (value as string[]) : [];
+      return (
+        <div className={`space-y-2 ${inline ? "mt-2" : ""}`}>
+          {question.options?.map((option, index) => {
+            const isSelected = selectedValues.includes(option);
+            return (
+              <label
+                key={index}
+                className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  isSelected
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
+                } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  value={option}
+                  checked={isSelected}
+                  onChange={() => {
+                    const newValues = isSelected
+                      ? selectedValues.filter((v) => v !== option)
+                      : [...selectedValues, option];
+                    onChange(newValues);
+                  }}
+                  disabled={disabled}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className={inline ? "text-sm" : ""}>{option}</span>
+              </label>
+            );
+          })}
+          {selectedValues.length > 0 && onSubmit && (
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={disabled}
+              className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {t.question.confirmSelection}
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    case "dropdown":
+      return (
+        <select
+          value={(value as string) || ""}
+          onChange={(e) => {
+            onChange(e.target.value);
+            if (e.target.value && onSubmit) setTimeout(onSubmit, 100);
+          }}
+          disabled={disabled}
+          className={baseInputClass}
+        >
+          <option value="">{t.question.selectOption}</option>
+          {question.options?.map((option, index) => (
+            <option key={index} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      );
+
+    case "rating": {
       const min = question.validation?.min ?? 1;
       const max = question.validation?.max ?? 5;
       const ratings = Array.from({ length: max - min + 1 }, (_, i) => min + i);
@@ -104,6 +170,43 @@ export function QuestionInput({
           ))}
         </div>
       );
+    }
+
+    case "slider": {
+      const sliderMin = question.validation?.min ?? 0;
+      const sliderMax = question.validation?.max ?? 100;
+      const sliderValue = typeof value === "number" ? value : sliderMin;
+      return (
+        <div className={`${inline ? "mt-2" : ""}`}>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500 w-8">{sliderMin}</span>
+            <input
+              type="range"
+              min={sliderMin}
+              max={sliderMax}
+              value={sliderValue}
+              onChange={(e) => onChange(Number(e.target.value))}
+              disabled={disabled}
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            />
+            <span className="text-sm text-gray-500 w-8">{sliderMax}</span>
+          </div>
+          <div className="text-center mt-2">
+            <span className="text-2xl font-bold text-blue-600">{sliderValue}</span>
+          </div>
+          {onSubmit && (
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={disabled}
+              className="mt-3 w-full px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {t.question.confirmValue}
+            </button>
+          )}
+        </div>
+      );
+    }
 
     case "yes_no":
       return (
@@ -157,6 +260,32 @@ export function QuestionInput({
             if (e.target.value && onSubmit) setTimeout(onSubmit, 100);
           }}
           disabled={disabled}
+          className={baseInputClass}
+        />
+      );
+
+    case "email":
+      return (
+        <input
+          type="email"
+          value={(value as string) || ""}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={disabled}
+          placeholder={t.question.enterEmail}
+          className={baseInputClass}
+        />
+      );
+
+    case "phone":
+      return (
+        <input
+          type="tel"
+          value={(value as string) || ""}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={disabled}
+          placeholder={t.question.enterPhone}
           className={baseInputClass}
         />
       );

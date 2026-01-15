@@ -112,6 +112,7 @@ export const translations = {
       closed: "Closed",
       activate: "Activate",
       close: "Close",
+      analyze: "Analyze",
       exportCSV: "Export CSV",
       copyLink: "Copy Link",
     },
@@ -134,6 +135,8 @@ export const translations = {
     // Chat interface
     chat: {
       aiThinking: "AI is thinking...",
+      aiLabel: "AI",
+      youLabel: "You",
     },
 
     // Question input
@@ -141,6 +144,11 @@ export const translations = {
       typeAnswer: "Type your answer...",
       enterNumber: "Enter a number...",
       enterDate: "Enter a date...",
+      enterEmail: "Enter your email...",
+      enterPhone: "Enter your phone number...",
+      selectOption: "Select an option...",
+      confirmSelection: "Confirm Selection",
+      confirmValue: "Confirm",
       yes: "Yes",
       no: "No",
     },
@@ -257,6 +265,7 @@ export const translations = {
       closed: "已关闭",
       activate: "激活",
       close: "关闭",
+      analyze: "分析",
       exportCSV: "导出 CSV",
       copyLink: "复制链接",
     },
@@ -279,6 +288,8 @@ export const translations = {
     // Chat interface
     chat: {
       aiThinking: "AI 正在思考...",
+      aiLabel: "AI",
+      youLabel: "你",
     },
 
     // Question input
@@ -286,6 +297,11 @@ export const translations = {
       typeAnswer: "输入您的回答...",
       enterNumber: "输入数字...",
       enterDate: "选择日期...",
+      enterEmail: "输入您的邮箱...",
+      enterPhone: "输入您的电话号码...",
+      selectOption: "请选择...",
+      confirmSelection: "确认选择",
+      confirmValue: "确认",
       yes: "是",
       no: "否",
     },

@@ -1,4 +1,15 @@
-export type QuestionType = "text" | "multiple_choice" | "rating" | "yes_no" | "date" | "number";
+export type QuestionType =
+  | "text"
+  | "multiple_choice"
+  | "multi_select"
+  | "dropdown"
+  | "rating"
+  | "slider"
+  | "yes_no"
+  | "date"
+  | "number"
+  | "email"
+  | "phone";
 
 export interface QuestionValidation {
   minLength?: number;

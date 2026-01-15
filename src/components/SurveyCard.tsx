@@ -8,6 +8,7 @@ interface SurveyCardProps {
   responseCount?: number;
   onExport?: () => void;
   onStatusChange?: (status: "draft" | "active" | "closed") => void;
+  onAnalyze?: () => void;
 }
 
 export function SurveyCard({
@@ -15,6 +16,7 @@ export function SurveyCard({
   responseCount = 0,
   onExport,
   onStatusChange,
+  onAnalyze,
 }: SurveyCardProps) {
   const { t } = useLanguage();
 
@@ -71,6 +73,14 @@ export function SurveyCard({
             className="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
           >
             {t.card.close}
+          </button>
+        )}
+        {onAnalyze && responseCount > 0 && (
+          <button
+            onClick={onAnalyze}
+            className="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 transition-colors"
+          >
+            {t.card.analyze}
           </button>
         )}
         {onExport && responseCount > 0 && (

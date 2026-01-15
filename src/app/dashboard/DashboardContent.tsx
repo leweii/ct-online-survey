@@ -149,7 +149,7 @@ export function DashboardContent() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/")}
@@ -164,25 +164,17 @@ export function DashboardContent() {
               <p className="text-sm text-gray-500">{t.dashboard.name}{creatorCode}</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => router.push(`/dashboard/chat?code=${encodeURIComponent(creatorCode)}`)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              {t.dashboard.dataAnalysis}
-            </button>
-            <button
-              onClick={() => router.push("/create")}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              {t.dashboard.createSurvey}
-            </button>
-          </div>
+          <button
+            onClick={() => router.push("/create")}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            {t.dashboard.createSurvey}
+          </button>
         </div>
       </header>
 
       {/* Content */}
-      <main className="max-w-6xl mx-auto p-4">
+      <main className="max-w-4xl mx-auto p-4">
         {loading ? (
           <div className="text-center py-12">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -209,7 +201,7 @@ export function DashboardContent() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             {surveys.map((survey) => (
               <SurveyCard
                 key={survey.id}
@@ -217,6 +209,7 @@ export function DashboardContent() {
                 responseCount={survey.responseCount}
                 onExport={() => handleExport(survey.id)}
                 onStatusChange={(status) => handleStatusChange(survey.id, status)}
+                onAnalyze={() => router.push(`/dashboard/chat?code=${encodeURIComponent(creatorCode)}&survey=${survey.id}`)}
               />
             ))}
           </div>

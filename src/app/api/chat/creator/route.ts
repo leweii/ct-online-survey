@@ -1,5 +1,5 @@
 import { streamText } from "ai";
-import { geminiPro, parseActions, removeActionTags } from "@/lib/ai";
+import { geminiPro, parseActions, StreamActionBuffer } from "@/lib/ai";
 import { supabase } from "@/lib/supabase";
 import { nanoid } from "nanoid";
 import type { Question, QuestionType } from "@/types/database";
@@ -57,12 +57,23 @@ const CREATOR_SYSTEM_PROMPT = `You are a professional survey design expert. You 
 6. Let them modify, add, remove questions, or finalize
 
 ## Question Types (use appropriately):
-- text: Open-ended responses (for qualitative insights, feedback)
-- multiple_choice: Single selection from 3-5 balanced options (for categorical data)
-- rating: 1-5 scale (for measuring satisfaction, agreement, frequency)
+- text: Open-ended responses (for qualitative insights, detailed feedback)
+- multiple_choice: Single selection from 3-6 balanced options (for categorical data, preferences)
+- multi_select: Multiple selections allowed (for "select all that apply" questions, e.g., interests, features used)
+- dropdown: Single selection from a long list (for countries, professions, industries - use when options > 6)
+- rating: 1-5 scale (for measuring satisfaction, agreement, likelihood)
+- slider: 0-100 scale (for precise measurements like confidence level, likelihood percentage)
 - yes_no: Binary questions (for clear yes/no scenarios only)
 - number: Numeric input (for age, quantity, frequency counts)
 - date: Date selection (for time-related data)
+- email: Email address input (for contact information, follow-up)
+- phone: Phone number input (for contact information)
+
+## Question Type Selection Guide:
+- Use multi_select when respondents might choose multiple options (e.g., "Which features do you use?")
+- Use dropdown instead of multiple_choice when you have more than 6 options
+- Use slider for NPS (0-10), percentage estimates, or precise scoring
+- Use email/phone sparingly, usually at the end for optional follow-up contact
 
 ## IMPORTANT: Include ACTION tags at the END of your message. The user won't see them.
 
@@ -130,19 +141,28 @@ export async function POST(request: Request) {
     // Process the stream and extract actions
     let fullResponse = "";
     const encoder = new TextEncoder();
+    const actionBuffer = new StreamActionBuffer();
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
           for await (const chunk of result.textStream) {
             fullResponse += chunk;
-            // Stream the text without action tags
-            const cleanChunk = removeActionTags(chunk);
-            if (cleanChunk) {
+            // Buffer the chunk and get safe text to emit
+            const safeText = actionBuffer.push(chunk);
+            if (safeText) {
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ text: cleanChunk })}\n\n`)
+                encoder.encode(`data: ${JSON.stringify({ text: safeText })}\n\n`)
               );
             }
+          }
+
+          // Flush any remaining buffered content
+          const remaining = actionBuffer.flush();
+          if (remaining) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ text: remaining })}\n\n`)
+            );
           }
 
           // Parse actions from complete response

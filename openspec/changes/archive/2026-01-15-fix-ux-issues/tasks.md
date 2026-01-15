@@ -27,10 +27,10 @@
 - [x] 4.2 Verify navigation consistency across all pages
 
 ## 5. Testing
-- [ ] 5.1 Test CSV export with Chinese content in Excel
-- [ ] 5.2 Test survey-level analytics with multiple surveys
-- [ ] 5.3 Test creator name persistence across sessions
-- [ ] 5.4 Test navigation flow from all pages
+- [x] 5.1 Test CSV export with Chinese content in Excel
+- [x] 5.2 Test survey-level analytics with multiple surveys
+- [x] 5.3 Test creator name persistence across sessions
+- [x] 5.4 Test navigation flow from all pages
 
 ## Dependencies
 - Tasks 1-4 can be done in parallel
