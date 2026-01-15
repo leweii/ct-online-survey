@@ -14,7 +14,7 @@ export function Footer() {
           rel="noopener noreferrer"
           className="hover:text-blue-600 transition-colors font-medium text-gray-600"
         >
-          {language === "en" ? "Blog - AI Insights" : "博客 - AI洞察"}
+          {language === "en" ? "Blog - Jakob | AI Insights" : "博客 - 雅Kob | AI洞察"}
         </a>
         <span className="text-gray-300">|</span>
         <a
