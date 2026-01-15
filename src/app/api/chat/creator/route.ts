@@ -16,32 +16,40 @@ interface SurveyState {
   isFinalized: boolean;
 }
 
-const CREATOR_SYSTEM_PROMPT = `You are a helpful survey creation assistant. Guide the user through creating a survey step by step.
+const CREATOR_SYSTEM_PROMPT = `You are a helpful survey creation assistant. You generate complete surveys from topics.
 
-Your responsibilities:
-1. First, ask for the survey title
-2. Then ask for a brief description
-3. Help add questions one at a time
-4. For each question, determine:
-   - The question text
-   - The question type (text, multiple_choice, rating, yes_no, date, number)
-   - Whether it's required
-   - For multiple_choice: the options
-   - For text: optional min/max length
-   - For number/rating: optional min/max values
-5. Ask if they want to add more questions or finish
-6. When done, finalize the survey
+## Flow:
+1. When user describes a topic (e.g., "customer satisfaction for a coffee shop"), generate:
+   - An appropriate survey title
+   - A brief description
+   - 5-8 relevant questions with appropriate types
+2. Present all generated content to the user for review
+3. Let them remove questions, add questions, or finalize
 
-IMPORTANT: When you need to perform an action, include an ACTION tag at the END of your message.
-The user won't see the ACTION tags.
+## Question Types:
+- text: Open-ended text response
+- multiple_choice: Select from options (include 3-5 relevant options)
+- rating: 1-5 scale rating
+- yes_no: Yes/No question
+- number: Numeric input
+- date: Date selection
 
-Action formats:
-- Set title: <ACTION>{"type": "set_title", "title": "Survey Title"}</ACTION>
-- Set description: <ACTION>{"type": "set_description", "description": "Description text"}</ACTION>
-- Add question: <ACTION>{"type": "add_question", "question": {"type": "text|multiple_choice|rating|yes_no|date|number", "text": "Question text", "required": true, "options": ["opt1", "opt2"], "validation": {"min": 1, "max": 5}}}</ACTION>
+## IMPORTANT: Include ACTION tags at the END of your message. The user won't see them.
+
+## Action Formats:
+- Set title and description: <ACTION>{"type": "set_title", "title": "Survey Title"}</ACTION><ACTION>{"type": "set_description", "description": "Description text"}</ACTION>
+- Set all questions at once: <ACTION>{"type": "set_questions", "questions": [{"type": "multiple_choice", "text": "Question?", "required": true, "options": ["A", "B", "C"]}, {"type": "rating", "text": "Rate X?", "required": true}]}</ACTION>
+- Add one question: <ACTION>{"type": "add_question", "question": {"type": "text", "text": "Question?", "required": true}}</ACTION>
+- Remove question by number: <ACTION>{"type": "remove_question", "index": 1}</ACTION>
 - Finalize survey: <ACTION>{"type": "finalize"}</ACTION>
 
-Be conversational and friendly. Ask one thing at a time. Confirm each step before moving on.`;
+## Guidelines:
+- When generating questions, use set_questions to set them all at once (not add_question for each)
+- Mix question types appropriately for the topic
+- Make most questions required, but leave 1-2 optional for open feedback
+- When presenting questions, number them (1, 2, 3...) so user can reference by number
+- When user wants to remove a question, use remove_question with the 0-based index
+- Be conversational and helpful`;
 
 export async function POST(request: Request) {
   try {
@@ -123,6 +131,27 @@ export async function POST(request: Request) {
                   validation: questionData.validation,
                 };
                 updatedState.questions = [...updatedState.questions, newQuestion];
+                break;
+              }
+              case "set_questions": {
+                // Replace all questions at once
+                const questionsData = action.questions || [];
+                updatedState.questions = questionsData.map((q: Partial<Question>) => ({
+                  id: nanoid(8),
+                  type: (q.type as QuestionType) || "text",
+                  text: q.text || "",
+                  required: q.required ?? true,
+                  options: q.options,
+                  validation: q.validation,
+                }));
+                break;
+              }
+              case "remove_question": {
+                // Remove question by index (0-based)
+                const index = typeof action.index === "number" ? action.index : parseInt(action.index, 10);
+                if (!isNaN(index) && index >= 0 && index < updatedState.questions.length) {
+                  updatedState.questions = updatedState.questions.filter((_, i) => i !== index);
+                }
                 break;
               }
               case "finalize":

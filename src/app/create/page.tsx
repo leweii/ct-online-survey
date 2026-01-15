@@ -21,7 +21,7 @@ export default function CreateSurveyPage() {
       id: "welcome",
       role: "assistant",
       content:
-        "Hi! I'm here to help you create a survey. Let's start with the basics - what would you like to call your survey?",
+        "Hi! I'm here to help you create a survey. Just describe your survey topic (e.g., \"customer satisfaction for a restaurant\") and I'll generate a complete survey with relevant questions for you to review.",
     },
   ]);
   const [surveyState, setSurveyState] = useState<SurveyState | null>(null);
