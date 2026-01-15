@@ -21,7 +21,7 @@ export default function CreateSurveyPage() {
       id: "welcome",
       role: "assistant",
       content:
-        "Hi! I'm here to help you create a survey. Just describe your survey topic (e.g., \"customer satisfaction for a restaurant\") and I'll generate a complete survey with relevant questions for you to review.",
+        "您好！我是您的问卷设计助手。请描述您的问卷主题（例如：\"餐厅顾客满意度调查\"），我会为您生成一套包含 21-28 个问题的完整专业问卷供您审阅，您可以根据需要删减问题。",
     },
   ]);
   const [surveyState, setSurveyState] = useState<SurveyState | null>(null);
@@ -83,7 +83,7 @@ export default function CreateSurveyPage() {
                   // If survey is finalized, show completion message
                   if (data.surveyState.isFinalized && data.surveyState.id) {
                     const surveyUrl = `${window.location.origin}/survey/${data.surveyState.id}`;
-                    accumulatedText += `\n\nYour survey is ready! Here are the details:\n\n**Survey Link:** ${surveyUrl}\n\n**Creator Code:** ${data.surveyState.creator_code}\n\nSave your creator code to access your dashboard and view responses later.`;
+                    accumulatedText += `\n\n问卷已创建成功！以下是详细信息：\n\n**问卷链接：** ${surveyUrl}\n\n**创建者代码：** ${data.surveyState.creator_code}\n\n请妥善保存创建者代码，以便后续查看仪表盘和回复数据。`;
                   }
                 }
               } catch {
@@ -112,7 +112,7 @@ export default function CreateSurveyPage() {
             id: Date.now().toString() + "-error",
             role: "assistant",
             content:
-              "Sorry, I encountered an error. Please try again.",
+              "抱歉，遇到了一些问题。请重试。",
           },
         ]);
       } finally {
@@ -146,12 +146,11 @@ export default function CreateSurveyPage() {
               />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold">Create Survey</h1>
+          <h1 className="text-lg font-semibold">创建问卷</h1>
         </div>
         {surveyState?.title && (
           <span className="text-sm text-gray-500">
-            {surveyState.questions.length} question
-            {surveyState.questions.length !== 1 ? "s" : ""}
+            {surveyState.questions.length} 个问题
           </span>
         )}
       </header>
@@ -162,7 +161,7 @@ export default function CreateSurveyPage() {
           messages={messages}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
-          placeholder="Type your response..."
+          placeholder="输入您的回复..."
           streamingContent={streamingContent}
         />
       </div>

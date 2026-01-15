@@ -17,7 +17,7 @@
 - [x] 3.4 Keep question text in original language
 
 ## 4. Testing
-- [ ] 4.1 Test creating survey in Chinese
-- [ ] 4.2 Test creating survey in English
-- [ ] 4.3 Test responder using different language than survey
-- [ ] 4.4 Verify questions remain in original language
+- [x] 4.1 Test creating survey in Chinese
+- [x] 4.2 Test creating survey in English
+- [x] 4.3 Test responder using different language than survey
+- [x] 4.4 Verify questions remain in original language

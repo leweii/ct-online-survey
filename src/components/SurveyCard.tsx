@@ -21,6 +21,12 @@ export function SurveyCard({
     closed: "bg-gray-100 text-gray-800",
   };
 
+  const statusLabels = {
+    draft: "草稿",
+    active: "进行中",
+    closed: "已关闭",
+  };
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-3">
@@ -32,7 +38,7 @@ export function SurveyCard({
             statusColors[survey.status]
           }`}
         >
-          {survey.status}
+          {statusLabels[survey.status]}
         </span>
       </div>
 
@@ -43,8 +49,8 @@ export function SurveyCard({
       )}
 
       <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-        <span>{survey.questions.length} questions</span>
-        <span>{responseCount} responses</span>
+        <span>{survey.questions.length} 个问题</span>
+        <span>{responseCount} 条回复</span>
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -53,7 +59,7 @@ export function SurveyCard({
             onClick={() => onStatusChange("active")}
             className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
           >
-            Activate
+            激活
           </button>
         )}
         {onStatusChange && survey.status === "active" && (
@@ -61,7 +67,7 @@ export function SurveyCard({
             onClick={() => onStatusChange("closed")}
             className="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
           >
-            Close
+            关闭
           </button>
         )}
         {onExport && responseCount > 0 && (
@@ -69,7 +75,7 @@ export function SurveyCard({
             onClick={onExport}
             className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
           >
-            Export CSV
+            导出 CSV
           </button>
         )}
         <button
@@ -79,7 +85,7 @@ export function SurveyCard({
           }}
           className="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition-colors"
         >
-          Copy Link
+          复制链接
         </button>
       </div>
     </div>

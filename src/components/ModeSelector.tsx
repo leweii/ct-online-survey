@@ -16,7 +16,7 @@ export function ModeSelector({ mode, onModeChange }: ModeSelectorProps) {
             : "text-gray-600 hover:text-gray-800"
         }`}
       >
-        Create Survey
+        创建问卷
       </button>
       <button
         onClick={() => onModeChange("take")}
@@ -26,7 +26,7 @@ export function ModeSelector({ mode, onModeChange }: ModeSelectorProps) {
             : "text-gray-600 hover:text-gray-800"
         }`}
       >
-        Take Survey
+        填写问卷
       </button>
     </div>
   );

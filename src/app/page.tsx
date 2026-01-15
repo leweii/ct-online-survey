@@ -17,7 +17,7 @@ export default function Home() {
 
   const handleTakeSurvey = () => {
     if (!surveyId.trim()) {
-      setError("Please enter a survey ID or link");
+      setError("请输入问卷 ID 或链接");
       return;
     }
     // Extract ID from URL if full URL is pasted
@@ -32,7 +32,7 @@ export default function Home() {
 
   const handleViewDashboard = () => {
     if (!creatorCode.trim()) {
-      setError("Please enter your creator code");
+      setError("请输入您的创建者代码");
       return;
     }
     router.push(`/dashboard?code=${encodeURIComponent(creatorCode.trim())}`);
@@ -43,9 +43,9 @@ export default function Home() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Survey Bot</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">问卷助手</h1>
           <p className="text-gray-600">
-            Create and take surveys through natural conversation
+            通过自然对话创建和填写问卷
           </p>
         </div>
 
@@ -59,20 +59,20 @@ export default function Home() {
           {mode === "create" ? (
             <div className="space-y-4">
               <p className="text-gray-600 text-center">
-                Start a conversation to design your survey with AI assistance
+                通过 AI 对话来设计您的问卷
               </p>
               <button
                 onClick={handleCreateSurvey}
                 className="w-full py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition-colors"
               >
-                Start Creating
+                开始创建
               </button>
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">or</span>
+                  <span className="px-2 bg-white text-gray-500">或</span>
                 </div>
               </div>
               <div className="space-y-2">
@@ -83,21 +83,21 @@ export default function Home() {
                     setCreatorCode(e.target.value);
                     setError("");
                   }}
-                  placeholder="Enter your creator code"
+                  placeholder="输入您的创建者代码"
                   className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   onClick={handleViewDashboard}
                   className="w-full py-3 border border-gray-300 text-gray-700 rounded-full font-medium hover:bg-gray-50 transition-colors"
                 >
-                  View Dashboard
+                  查看仪表盘
                 </button>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <p className="text-gray-600 text-center">
-                Enter a survey link or ID to start responding
+                输入问卷链接或 ID 开始填写
               </p>
               <input
                 type="text"
@@ -106,14 +106,14 @@ export default function Home() {
                   setSurveyId(e.target.value);
                   setError("");
                 }}
-                placeholder="Survey ID or link"
+                placeholder="问卷 ID 或链接"
                 className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={handleTakeSurvey}
                 className="w-full py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition-colors"
               >
-                Start Survey
+                开始填写
               </button>
             </div>
           )}
@@ -125,7 +125,7 @@ export default function Home() {
 
         {/* Footer */}
         <p className="text-center text-gray-400 text-sm mt-8">
-          Powered by AI for seamless survey experiences
+          由 AI 驱动，提供流畅的问卷体验
         </p>
       </div>
     </main>

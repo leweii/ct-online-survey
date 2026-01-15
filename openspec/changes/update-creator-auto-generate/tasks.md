@@ -13,7 +13,7 @@
 - [x] 3.1 Update welcome message in create/page.tsx to reflect new flow
 
 ## 4. Testing
-- [ ] 4.1 Test topic-to-questions generation flow
-- [ ] 4.2 Test removing questions from generated list
-- [ ] 4.3 Test adding additional questions after generation
-- [ ] 4.4 Test finalizing survey with mixed generated/added questions
+- [x] 4.1 Test topic-to-questions generation flow
+- [x] 4.2 Test removing questions from generated list
+- [x] 4.3 Test adding additional questions after generation
+- [x] 4.4 Test finalizing survey with mixed generated/added questions

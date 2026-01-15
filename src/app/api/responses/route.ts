@@ -5,11 +5,11 @@ import { nanoid } from "nanoid";
 
 const db = supabase as any;
 
-// POST /api/responses - Start a new response session
+// POST /api/responses - Start a new response session or submit completed/partial response
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { survey_id, respondent_id } = body;
+    const { survey_id, respondent_id, answers, status: responseStatus } = body;
 
     if (!survey_id) {
       return NextResponse.json(
@@ -36,6 +36,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If answers and status are provided, this is a direct submission (from form mode)
+    if (answers && (responseStatus === "completed" || responseStatus === "partial")) {
+      const { data, error } = await db
+        .from("responses")
+        .insert({
+          survey_id,
+          respondent_id: respondent_id || nanoid(12),
+          answers,
+          status: responseStatus,
+          current_question_index: 0,
+          completed_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json(data, { status: 201 });
+    }
+
+    // Otherwise, start a new response session (for chat mode)
     const { data, error } = await db
       .from("responses")
       .insert({

@@ -69,6 +69,6 @@
 - [x] 10.6 Test CSV export with various question types
 
 ## 11. Deployment
-- [ ] 11.1 Configure Vercel project
-- [ ] 11.2 Set environment variables in Vercel
-- [ ] 11.3 Deploy and verify production functionality
+- [x] 11.1 Configure Vercel project
+- [x] 11.2 Set environment variables in Vercel
+- [x] 11.3 Deploy and verify production functionality

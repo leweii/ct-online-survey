@@ -21,7 +21,7 @@ export function ResponseModeSelector({
           <p className="text-gray-600 mb-6">{survey.description}</p>
         )}
         <p className="text-sm text-gray-500 mb-8">
-          {questions.length} question{questions.length !== 1 ? "s" : ""}
+          共 {questions.length} 个问题
         </p>
 
         <div className="space-y-4">
@@ -29,9 +29,9 @@ export function ResponseModeSelector({
             onClick={() => onSelectMode("form")}
             className="w-full p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
           >
-            <div className="font-semibold text-lg mb-1">Form Mode</div>
+            <div className="font-semibold text-lg mb-1">表单模式</div>
             <div className="text-sm text-gray-600">
-              Answer all questions at once in a traditional form
+              以传统表单形式一次性填写所有问题
             </div>
           </button>
 
@@ -39,9 +39,9 @@ export function ResponseModeSelector({
             onClick={() => onSelectMode("chat")}
             className="w-full p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
           >
-            <div className="font-semibold text-lg mb-1">Chat Mode</div>
+            <div className="font-semibold text-lg mb-1">对话模式</div>
             <div className="text-sm text-gray-600">
-              Answer questions one at a time with AI guidance
+              在 AI 引导下逐个回答问题
             </div>
           </button>
         </div>

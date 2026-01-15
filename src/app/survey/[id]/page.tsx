@@ -47,20 +47,20 @@ export default function SurveyResponsePage() {
         const res = await fetch(`/api/surveys/${surveyId}`);
         if (!res.ok) {
           if (res.status === 404) {
-            setError("Survey not found");
+            setError("未找到问卷");
           } else {
-            setError("Failed to load survey");
+            setError("加载问卷失败");
           }
           return;
         }
         const data = await res.json();
         if (data.status !== "active") {
-          setError("This survey is not currently accepting responses");
+          setError("此问卷当前不接受回复");
           return;
         }
         setSurvey(data);
       } catch {
-        setError("Failed to load survey");
+        setError("加载问卷失败");
       } finally {
         setLoading(false);
       }
@@ -78,7 +78,7 @@ export default function SurveyResponsePage() {
         {
           id: "welcome",
           role: "assistant",
-          content: `Welcome! Let's start the survey.\n\n**Question 1 of ${questions.length}:**\n${questions[0]?.text || ""}`,
+          content: `您好！让我们开始问卷调查。\n\n**问题 1 / ${questions.length}：**\n${questions[0]?.text || ""}`,
         },
       ]);
     }
@@ -97,11 +97,34 @@ export default function SurveyResponsePage() {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to submit");
+      if (!res.ok) throw new Error("提交失败");
       setFormCompleted(true);
     } catch (error) {
       console.error("Submit error:", error);
-      alert("Failed to submit survey. Please try again.");
+      alert("问卷提交失败，请重试。");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePartialSubmit = async (answers: Record<string, unknown>) => {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          survey_id: surveyId,
+          answers,
+          status: "partial",
+        }),
+      });
+
+      if (!res.ok) throw new Error("提交失败");
+      setFormCompleted(true);
+    } catch (error) {
+      console.error("Submit error:", error);
+      alert("问卷提交失败，请重试。");
     } finally {
       setIsSubmitting(false);
     }
@@ -167,7 +190,7 @@ export default function SurveyResponsePage() {
                   const questions = survey.questions as Question[];
                   if (data.responseState.isCompleted) {
                     setCurrentQuestion(null);
-                    accumulatedText += "\n\nThank you for completing the survey! Your responses have been saved.";
+                    accumulatedText += "\n\n感谢您完成问卷！您的回答已保存。";
                   } else {
                     setCurrentQuestion(questions[data.responseState.currentQuestionIndex] || null);
                   }
@@ -197,7 +220,7 @@ export default function SurveyResponsePage() {
           {
             id: Date.now().toString() + "-error",
             role: "assistant",
-            content: "Sorry, I encountered an error. Please try again.",
+            content: "抱歉，遇到了一些问题。请重试。",
           },
         ]);
       } finally {
@@ -219,7 +242,7 @@ export default function SurveyResponsePage() {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading survey...</p>
+          <p className="text-gray-600">加载问卷中...</p>
         </div>
       </div>
     );
@@ -235,7 +258,7 @@ export default function SurveyResponsePage() {
             onClick={() => router.push("/")}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Go Home
+            返回首页
           </button>
         </div>
       </div>
@@ -256,13 +279,13 @@ export default function SurveyResponsePage() {
         <div className="h-screen flex items-center justify-center">
           <div className="text-center max-w-md p-6">
             <div className="text-green-500 text-6xl mb-4">&#10003;</div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Thank You!</h2>
-            <p className="text-gray-600 mb-6">Your responses have been submitted successfully.</p>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">感谢您！</h2>
+            <p className="text-gray-600 mb-6">您的回答已成功提交。</p>
             <button
               onClick={() => router.push("/")}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Go Home
+              返回首页
             </button>
           </div>
         </div>
@@ -272,6 +295,7 @@ export default function SurveyResponsePage() {
       <FormResponse
         survey={survey}
         onSubmit={handleFormSubmit}
+        onPartialSubmit={handlePartialSubmit}
         isSubmitting={isSubmitting}
       />
     );
@@ -318,8 +342,8 @@ export default function SurveyResponsePage() {
             isLoading={isLoading}
             placeholder={
               responseState?.isCompleted
-                ? "Survey completed!"
-                : "Type your answer..."
+                ? "问卷已完成！"
+                : "输入您的回答..."
             }
             streamingContent={streamingContent}
             hideInput
@@ -342,7 +366,7 @@ export default function SurveyResponsePage() {
                 disabled={inlineValue === undefined || inlineValue === null || inlineValue === ""}
                 className="mt-3 w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Submit Answer
+                提交回答
               </button>
             )}
           </div>
@@ -354,7 +378,7 @@ export default function SurveyResponsePage() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Or type your answer here..."
+                placeholder="或在此输入您的回答..."
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !isLoading) {
@@ -378,7 +402,7 @@ export default function SurveyResponsePage() {
                 disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                Send
+                发送
               </button>
             </div>
           </div>

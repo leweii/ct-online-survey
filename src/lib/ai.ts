@@ -1,6 +1,13 @@
 import { google } from "@ai-sdk/google";
 
-export const geminiModel = google("gemini-2.0-flash");
+// Flash 模型 - 用于 Responder 和 Analytics（快速响应）
+export const geminiFlash = google("gemini-2.0-flash");
+
+// Pro 模型 - 用于 Creator 生成专业问卷（高质量输出）
+export const geminiPro = google("gemini-2.5-pro");
+
+// Legacy export for backward compatibility
+export const geminiModel = geminiFlash;
 
 
 export function parseActions(text: string): Array<Record<string, any>> {

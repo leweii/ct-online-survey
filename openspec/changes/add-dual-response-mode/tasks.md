@@ -34,9 +34,9 @@
 - [x] 5.3 Test that bot shows next question without user prompt
 
 ## 6. Testing
-- [ ] 6.1 Test mode selector displays correctly
-- [ ] 6.2 Test form mode with all question types
-- [ ] 6.3 Test form submission saves all answers
-- [ ] 6.4 Test chat mode inline inputs render correctly
-- [ ] 6.5 Test chat mode auto-advance to next question
-- [ ] 6.6 Test progress indicator in both modes
+- [x] 6.1 Test mode selector displays correctly
+- [x] 6.2 Test form mode with all question types
+- [x] 6.3 Test form submission saves all answers
+- [x] 6.4 Test chat mode inline inputs render correctly
+- [x] 6.5 Test chat mode auto-advance to next question
+- [x] 6.6 Test progress indicator in both modes

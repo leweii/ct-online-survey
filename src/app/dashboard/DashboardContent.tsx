@@ -49,7 +49,7 @@ export function DashboardContent() {
 
       setSurveys(surveysWithCounts);
     } catch {
-      setError("Failed to load surveys");
+      setError("加载问卷失败");
     } finally {
       setLoading(false);
     }
@@ -99,17 +99,17 @@ export function DashboardContent() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <h1 className="text-2xl font-bold text-center mb-6">Creator Dashboard</h1>
+          <h1 className="text-2xl font-bold text-center mb-6">创建者仪表盘</h1>
           <form onSubmit={handleCodeSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Enter your creator code
+                输入您的创建者代码
               </label>
               <input
                 type="text"
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value)}
-                placeholder="Your 12-character code"
+                placeholder="您的 12 位代码"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -117,14 +117,14 @@ export function DashboardContent() {
               type="submit"
               className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              View Surveys
+              查看问卷
             </button>
           </form>
           <button
             onClick={() => router.push("/")}
             className="w-full mt-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
           >
-            Back to Home
+            返回首页
           </button>
         </div>
       </div>
@@ -137,21 +137,27 @@ export function DashboardContent() {
       <header className="bg-white border-b px-4 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold">Creator Dashboard</h1>
-            <p className="text-sm text-gray-500">Code: {creatorCode}</p>
+            <h1 className="text-xl font-bold">创建者仪表盘</h1>
+            <p className="text-sm text-gray-500">代码：{creatorCode}</p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => router.push(`/dashboard/chat?code=${encodeURIComponent(creatorCode)}`)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              数据分析
+            </button>
             <button
               onClick={() => router.push("/create")}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Create Survey
+              创建问卷
             </button>
             <button
               onClick={() => router.push("/")}
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Home
+              首页
             </button>
           </div>
         </div>
@@ -162,7 +168,7 @@ export function DashboardContent() {
         {loading ? (
           <div className="text-center py-12">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Loading surveys...</p>
+            <p className="text-gray-600">加载问卷中...</p>
           </div>
         ) : error ? (
           <div className="text-center py-12">
@@ -171,17 +177,17 @@ export function DashboardContent() {
               onClick={() => fetchSurveys(creatorCode)}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Try Again
+              重试
             </button>
           </div>
         ) : surveys.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">No surveys found for this creator code.</p>
+            <p className="text-gray-600 mb-4">未找到此创建者代码关联的问卷</p>
             <button
               onClick={() => router.push("/create")}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Create Your First Survey
+              创建您的第一份问卷
             </button>
           </div>
         ) : (

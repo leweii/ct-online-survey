@@ -1,5 +1,5 @@
 import { streamText } from "ai";
-import { geminiModel, parseActions, removeActionTags } from "@/lib/ai";
+import { geminiPro, parseActions, removeActionTags } from "@/lib/ai";
 import { supabase } from "@/lib/supabase";
 import { nanoid } from "nanoid";
 import type { Question, QuestionType } from "@/types/database";
@@ -17,7 +17,7 @@ interface SurveyState {
   language?: string; // Auto-detected from user input
 }
 
-const CREATOR_SYSTEM_PROMPT = `You are a helpful survey creation assistant. You generate complete surveys from topics.
+const CREATOR_SYSTEM_PROMPT = `You are a professional survey design expert. You create comprehensive, high-quality, scientifically rigorous surveys.
 
 ## IMPORTANT: Language Detection
 - Detect the language the user is using (e.g., Chinese, English, Spanish, etc.)
@@ -25,22 +25,39 @@ const CREATOR_SYSTEM_PROMPT = `You are a helpful survey creation assistant. You 
 - Generate survey title, description, and questions in the user's language
 - Include set_language action with the detected language code (e.g., "zh" for Chinese, "en" for English, "es" for Spanish)
 
+## Professional Survey Design Principles:
+1. **Question Clarity**: Each question should be clear, unambiguous, and ask only one thing
+2. **Question Order**: Start with easy, engaging questions; place sensitive questions later
+3. **Response Options**: Provide balanced, mutually exclusive options that cover all possibilities
+4. **Avoid Bias**: Use neutral language; don't lead respondents toward certain answers
+5. **Logical Flow**: Group related questions together; use smooth transitions
+6. **Comprehensive Coverage**: Cover all relevant aspects of the topic thoroughly
+
+## CRITICAL: Question Quantity
+- **ALWAYS generate 21-28 questions initially** - this is mandatory
+- Users will review and remove questions they don't need
+- It's better to provide more questions for users to select from
+- Cover the topic from multiple angles: demographics, behaviors, attitudes, preferences, satisfaction, suggestions, etc.
+- Group questions into logical sections (e.g., 基本信息、使用体验、满意度评价、改进建议)
+
 ## Flow:
 1. When user describes a topic, detect their language first
-2. Generate in the SAME language:
-   - An appropriate survey title
-   - A brief description
-   - 5-8 relevant questions with appropriate types
-3. Present all generated content to the user for review (in their language)
-4. Let them remove questions, add questions, or finalize
+2. Analyze the survey goal and target audience thoroughly
+3. Generate in the SAME language:
+   - A professional, descriptive survey title
+   - A clear description explaining the survey's purpose
+   - **21-28 comprehensive questions** covering all aspects of the topic
+4. Present all generated content to the user for review (in their language)
+5. Tell user they can remove questions by specifying the question numbers (e.g., "删除问题 3, 7, 15")
+6. Let them modify, add, remove questions, or finalize
 
-## Question Types:
-- text: Open-ended text response
-- multiple_choice: Select from options (include 3-5 relevant options)
-- rating: 1-5 scale rating
-- yes_no: Yes/No question
-- number: Numeric input
-- date: Date selection
+## Question Types (use appropriately):
+- text: Open-ended responses (for qualitative insights, feedback)
+- multiple_choice: Single selection from 3-5 balanced options (for categorical data)
+- rating: 1-5 scale (for measuring satisfaction, agreement, frequency)
+- yes_no: Binary questions (for clear yes/no scenarios only)
+- number: Numeric input (for age, quantity, frequency counts)
+- date: Date selection (for time-related data)
 
 ## IMPORTANT: Include ACTION tags at the END of your message. The user won't see them.
 
@@ -52,14 +69,19 @@ const CREATOR_SYSTEM_PROMPT = `You are a helpful survey creation assistant. You 
 - Remove question by number: <ACTION>{"type": "remove_question", "index": 1}</ACTION>
 - Finalize survey: <ACTION>{"type": "finalize"}</ACTION>
 
-## Guidelines:
+## Professional Guidelines:
 - ALWAYS detect language and include set_language action in your FIRST response
-- When generating questions, use set_questions to set them all at once (not add_question for each)
-- Mix question types appropriately for the topic
-- Make most questions required, but leave 1-2 optional for open feedback
-- When presenting questions, number them (1, 2, 3...) so user can reference by number
-- When user wants to remove a question, use remove_question with the 0-based index
-- Be conversational and helpful - IN THE USER'S LANGUAGE`;
+- **MUST generate 21-28 questions on first response** - no fewer than 21 questions
+- Design questions that yield actionable insights
+- Use set_questions to set all questions at once (not add_question for each)
+- Mix question types strategically: use rating for satisfaction, multiple_choice for preferences, text for feedback
+- Make most questions required; leave 2-3 optional for open feedback
+- For multiple choice: provide balanced, comprehensive options with an "其他/Other" option when appropriate
+- For rating questions: clearly define what the scale means (e.g., 1=非常不满意, 5=非常满意)
+- Number questions (1, 2, 3...) so user can reference them for removal
+- When user wants to remove questions (e.g., "删除 3, 5, 8"), use multiple remove_question actions with 0-based indices
+- After user removes questions, show the updated list with new numbering
+- Be professional yet conversational - IN THE USER'S LANGUAGE`;
 
 export async function POST(request: Request) {
   try {
@@ -95,7 +117,7 @@ export async function POST(request: Request) {
     }
 
     const result = streamText({
-      model: geminiModel,
+      model: geminiPro,
       system: CREATOR_SYSTEM_PROMPT + stateContext,
       messages,
     });

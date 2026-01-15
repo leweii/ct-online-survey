@@ -23,7 +23,7 @@ export interface SurveySettings {
 }
 
 export type SurveyStatus = "draft" | "active" | "closed";
-export type ResponseStatus = "in_progress" | "completed";
+export type ResponseStatus = "in_progress" | "partial" | "completed";
 
 export interface Survey {
   id: string;
