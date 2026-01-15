@@ -3,16 +3,21 @@ import { geminiPro, parseActions, removeActionTags } from "@/lib/ai";
 import { supabase } from "@/lib/supabase";
 import { nanoid } from "nanoid";
 import type { Question, QuestionType } from "@/types/database";
-
+import {
+  generateUniqueShortCode,
+  generateUniqueCreatorName,
+} from "@/lib/identifiers";
 
 const db = supabase as any;
 
 interface SurveyState {
   id?: string;
+  short_code?: string;  // User-facing survey code
   title?: string;
   description?: string;
   questions: Question[];
-  creator_code: string;
+  creator_code: string;  // Legacy, kept for backward compatibility
+  creator_name?: string;  // Fun pet name for creator
   isFinalized: boolean;
   language?: string; // Auto-detected from user input
 }
@@ -192,15 +197,22 @@ export async function POST(request: Request) {
               case "finalize":
                 // Create survey in database
                 if (updatedState.title) {
+                  // Generate new identifiers
+                  const shortCode = await generateUniqueShortCode(db);
+                  const language = updatedState.language || "zh";
+                  const creatorName = await generateUniqueCreatorName(db, language);
+
                   const { data: survey } = await db
                     .from("surveys")
                     .insert({
                       title: updatedState.title,
                       description: updatedState.description || null,
                       questions: updatedState.questions,
+                      short_code: shortCode,
                       creator_code: updatedState.creator_code,
+                      creator_name: creatorName,
                       settings: {
-                        language: updatedState.language || "en",
+                        language: language,
                       },
                       status: "active",
                     })
@@ -209,6 +221,8 @@ export async function POST(request: Request) {
 
                   if (survey) {
                     updatedState.id = survey.id;
+                    updatedState.short_code = survey.short_code;
+                    updatedState.creator_name = survey.creator_name;
                     updatedState.isFinalized = true;
                   }
                 }

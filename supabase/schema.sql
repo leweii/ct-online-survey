@@ -1,7 +1,9 @@
 -- Surveys table
 CREATE TABLE IF NOT EXISTS surveys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  creator_code VARCHAR(12) NOT NULL,
+  short_code VARCHAR(8) UNIQUE,  -- User-facing survey code (4-8 chars, adaptive)
+  creator_code VARCHAR(12) NOT NULL,  -- Legacy, kept for backward compatibility
+  creator_name VARCHAR(50) NOT NULL DEFAULT '',  -- Fun pet name for creator
   title VARCHAR(255) NOT NULL,
   description TEXT,
   questions JSONB NOT NULL DEFAULT '[]',
@@ -25,6 +27,8 @@ CREATE TABLE IF NOT EXISTS responses (
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_surveys_creator_code ON surveys(creator_code);
+CREATE INDEX IF NOT EXISTS idx_surveys_short_code ON surveys(short_code);
+CREATE INDEX IF NOT EXISTS idx_surveys_creator_name ON surveys(creator_name);
 CREATE INDEX IF NOT EXISTS idx_responses_survey_id ON responses(survey_id);
 CREATE INDEX IF NOT EXISTS idx_responses_respondent_id ON responses(respondent_id);
 

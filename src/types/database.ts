@@ -27,7 +27,9 @@ export type ResponseStatus = "in_progress" | "partial" | "completed";
 
 export interface Survey {
   id: string;
-  creator_code: string;
+  short_code: string;  // User-facing survey code (4-8 chars)
+  creator_code: string;  // Legacy, kept for backward compatibility
+  creator_name: string;  // Fun pet name for creator
   title: string;
   description: string | null;
   questions: Question[];
@@ -53,8 +55,10 @@ export interface Database {
     Tables: {
       surveys: {
         Row: Survey;
-        Insert: Omit<Survey, "id" | "created_at" | "updated_at"> & {
+        Insert: Omit<Survey, "id" | "short_code" | "creator_name" | "created_at" | "updated_at"> & {
           id?: string;
+          short_code?: string;
+          creator_name?: string;
           created_at?: string;
           updated_at?: string;
         };

@@ -7,10 +7,12 @@ import type { Question } from "@/types/database";
 
 interface SurveyState {
   id?: string;
+  short_code?: string;  // User-facing survey code
   title?: string;
   description?: string;
   questions: Question[];
-  creator_code: string;
+  creator_code: string;  // Legacy
+  creator_name?: string;  // Fun pet name for creator
   isFinalized: boolean;
 }
 
@@ -80,10 +82,12 @@ export default function CreateSurveyPage() {
                 if (data.done && data.surveyState) {
                   setSurveyState(data.surveyState);
 
-                  // If survey is finalized, show completion message
-                  if (data.surveyState.isFinalized && data.surveyState.id) {
-                    const surveyUrl = `${window.location.origin}/survey/${data.surveyState.id}`;
-                    accumulatedText += `\n\n问卷已创建成功！以下是详细信息：\n\n**问卷链接：** ${surveyUrl}\n\n**创建者代码：** ${data.surveyState.creator_code}\n\n请妥善保存创建者代码，以便后续查看仪表盘和回复数据。`;
+                  // If survey is finalized, show completion message with new identifiers
+                  if (data.surveyState.isFinalized && data.surveyState.short_code) {
+                    const shortCode = data.surveyState.short_code;
+                    const creatorName = data.surveyState.creator_name;
+                    const surveyUrl = `${window.location.origin}/survey/${shortCode}`;
+                    accumulatedText += `\n\n问卷已创建成功！以下是详细信息：\n\n**问卷代码：** ${shortCode}\n\n**问卷链接：** ${surveyUrl}\n\n**创建者名称：** ${creatorName}\n\n请妥善保存创建者名称，以便后续查看仪表盘和回复数据。`;
                   }
                 }
               } catch {

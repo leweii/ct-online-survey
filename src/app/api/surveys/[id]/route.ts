@@ -1,21 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-
+import { isUUID, isShortCode } from "@/lib/identifiers";
 
 const db = supabase as any;
 
-// GET /api/surveys/[id] - Get survey by ID
+// GET /api/surveys/[id] - Get survey by ID or short_code
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
 
-  const { data, error } = await db
-    .from("surveys")
-    .select("*")
-    .eq("id", id)
-    .single();
+  let query = db.from("surveys").select("*");
+
+  // Determine lookup method based on format
+  if (isUUID(id)) {
+    // UUID format - lookup by id
+    query = query.eq("id", id);
+  } else if (isShortCode(id)) {
+    // Short code format - lookup by short_code (case-insensitive)
+    query = query.ilike("short_code", id);
+  } else {
+    // Try both as fallback
+    query = query.or(`id.eq.${id},short_code.ilike.${id}`);
+  }
+
+  const { data, error } = await query.single();
 
   if (error) {
     if (error.code === "PGRST116") {

@@ -17,7 +17,7 @@ export default function Home() {
 
   const handleTakeSurvey = () => {
     if (!surveyId.trim()) {
-      setError("请输入问卷 ID 或链接");
+      setError("请输入问卷代码或链接");
       return;
     }
     // Extract ID from URL if full URL is pasted
@@ -32,7 +32,7 @@ export default function Home() {
 
   const handleViewDashboard = () => {
     if (!creatorCode.trim()) {
-      setError("请输入您的创建者代码");
+      setError("请输入您的创建者名称");
       return;
     }
     router.push(`/dashboard?code=${encodeURIComponent(creatorCode.trim())}`);
@@ -83,7 +83,7 @@ export default function Home() {
                     setCreatorCode(e.target.value);
                     setError("");
                   }}
-                  placeholder="输入您的创建者代码"
+                  placeholder="输入您的创建者名称（如：胖墩墩）"
                   className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
@@ -97,7 +97,7 @@ export default function Home() {
           ) : (
             <div className="space-y-4">
               <p className="text-gray-600 text-center">
-                输入问卷链接或 ID 开始填写
+                输入问卷代码或链接开始填写
               </p>
               <input
                 type="text"
@@ -106,7 +106,7 @@ export default function Home() {
                   setSurveyId(e.target.value);
                   setError("");
                 }}
-                placeholder="问卷 ID 或链接"
+                placeholder="问卷代码（如：A7B2）或链接"
                 className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button

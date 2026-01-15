@@ -103,13 +103,13 @@ export function DashboardContent() {
           <form onSubmit={handleCodeSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                输入您的创建者代码
+                输入您的创建者名称
               </label>
               <input
                 type="text"
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value)}
-                placeholder="您的 12 位代码"
+                placeholder="您的创建者名称（如：胖墩墩）"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -138,7 +138,7 @@ export function DashboardContent() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">创建者仪表盘</h1>
-            <p className="text-sm text-gray-500">代码：{creatorCode}</p>
+            <p className="text-sm text-gray-500">名称：{creatorCode}</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -182,7 +182,7 @@ export function DashboardContent() {
           </div>
         ) : surveys.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">未找到此创建者代码关联的问卷</p>
+            <p className="text-gray-600 mb-4">未找到此创建者名称关联的问卷</p>
             <button
               onClick={() => router.push("/create")}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
