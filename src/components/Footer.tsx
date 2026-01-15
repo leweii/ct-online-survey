@@ -14,18 +14,18 @@ export function Footer() {
           rel="noopener noreferrer"
           className="hover:text-blue-600 transition-colors font-medium text-gray-600"
         >
-          {language === "en" ? "Blog - Jakob | AI Insights" : "博客 - 雅Kob | AI洞察"}
+          {language === "en" ? "Blog: Jakob | AI Insights" : "博客：雅Kob | AI洞察"}
         </a>
         <span className="text-gray-300">|</span>
         <a
           href="mailto:lewei.me@gmail.com"
           className="hover:text-blue-600 transition-colors"
         >
-          lewei.me@gmail.com
+          {language === "en" ? "Email: " : "邮箱："}lewei.me@gmail.com
         </a>
         <span className="text-gray-300">|</span>
         <span>
-          {language === "en" ? "Xiaohongshu" : "小红书"}: @何乐为
+          {language === "en" ? "Xiaohongshu" : "小红书"}：@何乐为
         </span>
       </div>
     </footer>
