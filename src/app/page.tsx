@@ -75,21 +75,6 @@ export default function Home() {
           <p className="text-gray-600">{t.home.subtitle}</p>
         </div>
 
-        {/* Creator Name Input - Always visible at top */}
-        <div className="bg-blue-50 rounded-xl p-4 mb-6">
-          <label className="block text-sm font-medium text-blue-800 mb-2">
-            {t.home.creatorNameLabel}
-          </label>
-          <input
-            type="text"
-            value={creatorName}
-            onChange={(e) => handleCreatorNameChange(e.target.value)}
-            placeholder={t.home.creatorNamePlaceholder}
-            className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          />
-          <p className="text-xs text-blue-600 mt-2">{t.home.creatorNameHint}</p>
-        </div>
-
         {/* Mode Selector */}
         <div className="mb-6">
           <ModeSelector mode={mode} onModeChange={setMode} />
@@ -99,7 +84,20 @@ export default function Home() {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           {mode === "create" ? (
             <div className="space-y-4">
-              <p className="text-gray-600 text-center">{t.home.createDescription}</p>
+              {/* Creator Name Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t.home.creatorNameLabel}
+                </label>
+                <input
+                  type="text"
+                  value={creatorName}
+                  onChange={(e) => handleCreatorNameChange(e.target.value)}
+                  placeholder={t.home.creatorNamePlaceholder}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">{t.home.creatorNameHint}</p>
+              </div>
               <button
                 onClick={handleCreateSurvey}
                 className="w-full py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition-colors"
