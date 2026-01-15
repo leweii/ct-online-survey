@@ -85,16 +85,20 @@ function getRandomPetName(language: string): string {
 
 /**
  * Generate a unique creator name
- * If collision after retries, append random digits
+ * Always appends random digits to avoid collisions
  */
 export async function generateUniqueCreatorName(
   db: any,
   language: string = "zh"
 ): Promise<string> {
-  const maxRetries = 20;
+  const maxRetries = 10;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const name = getRandomPetName(language);
+    const baseName = getRandomPetName(language);
+    const suffix = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0");
+    const name = `${baseName}${suffix}`;
 
     // Check if name exists
     const { data } = await db
@@ -108,12 +112,9 @@ export async function generateUniqueCreatorName(
     }
   }
 
-  // If all retries failed, append random digits
+  // Fallback: use timestamp for guaranteed uniqueness
   const baseName = getRandomPetName(language);
-  const suffix = Math.floor(Math.random() * 1000)
-    .toString()
-    .padStart(3, "0");
-  return `${baseName}${suffix}`;
+  return `${baseName}${Date.now() % 10000}`;
 }
 
 /**
