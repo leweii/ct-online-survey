@@ -24,6 +24,13 @@ export async function GET() {
       .select("id, survey_id, status")
       .eq("survey_id", targetSurveyId);
 
+    // Test 4: With order (same as original API)
+    const { data: orderedResponses, error: orderError } = await db
+      .from("responses")
+      .select("*")
+      .eq("survey_id", targetSurveyId)
+      .order("started_at", { ascending: false });
+
     return NextResponse.json({
       test1_all_responses: {
         count: allResponses?.length ?? 0,
@@ -39,6 +46,11 @@ export async function GET() {
         count: filteredResponses?.length ?? 0,
         data: filteredResponses,
         error: filterError?.message ?? null,
+      },
+      test4_with_order: {
+        survey_id: targetSurveyId,
+        count: orderedResponses?.length ?? 0,
+        error: orderError?.message ?? null,
       },
     });
   } catch (e: any) {
