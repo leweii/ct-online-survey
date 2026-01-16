@@ -109,6 +109,7 @@ export const translations = {
       loadingSurveys: "Loading surveys...",
       noSurveysFound: "No surveys found for this creator name",
       createFirst: "Create your first survey",
+      hideClosed: "Hide closed",
     },
 
     // Analytics
@@ -316,6 +317,7 @@ export const translations = {
       loadingSurveys: "加载问卷中...",
       noSurveysFound: "未找到此创建者名称关联的问卷",
       createFirst: "创建您的第一份问卷",
+      hideClosed: "隐藏已关闭",
     },
 
     // Analytics

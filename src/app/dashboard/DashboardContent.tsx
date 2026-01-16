@@ -25,6 +25,7 @@ export function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [codeInput, setCodeInput] = useState(creatorCode);
+  const [hideClosed, setHideClosed] = useState(false);
 
   // Load creator name from localStorage if no code in URL
   useEffect(() => {
@@ -219,8 +220,23 @@ export function DashboardContent() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {surveys.map((survey) => (
+          <>
+            {/* Filter toggle */}
+            <div className="flex items-center justify-end mb-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hideClosed}
+                  onChange={(e) => setHideClosed(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-600">{t.dashboard.hideClosed}</span>
+              </label>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+            {surveys
+              .filter((survey) => !hideClosed || survey.status !== "closed")
+              .map((survey) => (
               <SurveyCard
                 key={survey.id}
                 survey={survey}
@@ -233,7 +249,8 @@ export function DashboardContent() {
                 onAnalyze={() => router.push(`/dashboard/chat?code=${encodeURIComponent(creatorCode)}&survey=${survey.id}`)}
               />
             ))}
-          </div>
+            </div>
+          </>
         )}
       </main>
     </div>
