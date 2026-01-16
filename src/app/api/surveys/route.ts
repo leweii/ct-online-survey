@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       questions,
       creator_code,
       creator_name,
+      customCreatorName,
       short_code,
       settings,
       status,
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Generate identifiers if not provided
     const finalShortCode = short_code || (await generateUniqueShortCode(db));
     const finalCreatorName =
-      creator_name || (await generateUniqueCreatorName(db, language));
+      customCreatorName?.trim() || creator_name || (await generateUniqueCreatorName(db, language));
     const finalCreatorCode = creator_code || nanoid(12); // Legacy, kept for compatibility
 
     const { data, error } = await db
@@ -87,6 +88,53 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(data, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+}
+
+// PUT /api/surveys - Update an existing survey
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, title, description, questions } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    if (!title) {
+      return NextResponse.json({ error: "title is required" }, { status: 400 });
+    }
+
+    // Get existing survey to preserve creator_name if not changing
+    const { data: existing } = await db
+      .from("surveys")
+      .select("creator_name, short_code")
+      .eq("id", id)
+      .single();
+
+    if (!existing) {
+      return NextResponse.json({ error: "Survey not found" }, { status: 404 });
+    }
+
+    const { data, error } = await db
+      .from("surveys")
+      .update({
+        title,
+        description: description || null,
+        questions: questions || [],
+        status: "active",
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }

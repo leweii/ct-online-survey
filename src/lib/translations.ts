@@ -74,6 +74,10 @@ export const translations = {
       viewSurvey: "View Survey",
       surveyFinalized: "Survey Created",
       editDisabled: "Editing disabled after survey is created",
+      finalize: "Save & Publish",
+      finalizing: "Saving...",
+      updateSurvey: "Update Survey",
+      surveyUpdated: "Survey updated successfully!",
     },
 
     // Survey page
@@ -276,6 +280,10 @@ export const translations = {
       viewSurvey: "查看问卷",
       surveyFinalized: "问卷已创建",
       editDisabled: "问卷创建后无法编辑",
+      finalize: "保存并发布",
+      finalizing: "保存中...",
+      updateSurvey: "更新问卷",
+      surveyUpdated: "问卷更新成功！",
     },
 
     // Survey page

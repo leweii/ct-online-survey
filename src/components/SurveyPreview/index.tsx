@@ -21,23 +21,27 @@ interface SurveyState {
 interface SurveyPreviewProps {
   surveyState: SurveyState | null;
   isLoading?: boolean;
+  isSaving?: boolean;
   onUpdateTitle: (title: string) => void;
   onUpdateDescription: (description: string) => void;
   onUpdateQuestion: (id: string, updates: Partial<Question>) => void;
   onDeleteQuestion: (id: string) => void;
   onAddQuestion: (question: Question) => void;
   onReorderQuestions: (fromIndex: number, toIndex: number) => void;
+  onFinalize: () => void;
 }
 
 export function SurveyPreview({
   surveyState,
   isLoading = false,
+  isSaving = false,
   onUpdateTitle,
   onUpdateDescription,
   onUpdateQuestion,
   onDeleteQuestion,
   onAddQuestion,
   onReorderQuestions,
+  onFinalize,
 }: SurveyPreviewProps) {
   const { t } = useLanguage();
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -134,6 +138,27 @@ export function SurveyPreview({
           </button>
         )}
       </div>
+
+      {/* Finalize Button */}
+      <div className="border-t bg-white px-4 py-3">
+        <button
+          onClick={onFinalize}
+          disabled={isSaving || isLoading || !surveyState.title || surveyState.questions.length === 0}
+          className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isSaving ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              {t.preview?.finalizing}
+            </>
+          ) : surveyState.id ? (
+            t.preview?.updateSurvey
+          ) : (
+            t.preview?.finalize
+          )}
+        </button>
+      </div>
+
       <AddQuestionModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={onAddQuestion} />
     </div>
   );

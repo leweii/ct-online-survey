@@ -29,6 +29,7 @@ function CreateSurveyContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [surveyState, setSurveyState] = useState<SurveyState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [verified, setVerified] = useState(() => isVerified("create"));
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -77,6 +78,61 @@ function CreateSurveyContent() {
       return { ...prev, questions };
     });
   }, []);
+
+  const handleFinalize = useCallback(async () => {
+    if (!surveyState || !surveyState.title || surveyState.questions.length === 0) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/surveys", {
+        method: surveyState.id ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: surveyState.id,
+          title: surveyState.title,
+          description: surveyState.description,
+          questions: surveyState.questions,
+          creator_code: surveyState.creator_code,
+          customCreatorName: customCreatorName || undefined,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to save survey");
+
+      const data = await response.json();
+      setSurveyState((prev) => prev ? {
+        ...prev,
+        id: data.id,
+        short_code: data.short_code,
+        creator_name: data.creator_name,
+        isFinalized: true,
+      } : null);
+
+      // Add success message to chat
+      const surveyUrl = `${window.location.origin}/survey/${data.short_code}`;
+      const successMessage = surveyState.id
+        ? t.preview?.surveyUpdated
+        : t.create.surveyCreated
+            .replace("{shortCode}", data.short_code)
+            .replace("{surveyUrl}", surveyUrl)
+            .replace("{creatorName}", data.creator_name);
+
+      setMessages((prev) => [...prev, {
+        id: Date.now().toString() + "-system",
+        role: "assistant",
+        content: successMessage || "Survey saved successfully!",
+      }]);
+    } catch (error) {
+      console.error("Error saving survey:", error);
+      setMessages((prev) => [...prev, {
+        id: Date.now().toString() + "-error",
+        role: "assistant",
+        content: t.create.errorMessage,
+      }]);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [surveyState, customCreatorName, t.create.surveyCreated, t.create.errorMessage, t.preview?.surveyUpdated]);
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -190,12 +246,14 @@ function CreateSurveyContent() {
           <SurveyPreview
             surveyState={surveyState}
             isLoading={isLoading}
+            isSaving={isSaving}
             onUpdateTitle={handleUpdateTitle}
             onUpdateDescription={handleUpdateDescription}
             onUpdateQuestion={handleUpdateQuestion}
             onDeleteQuestion={handleDeleteQuestion}
             onAddQuestion={handleAddQuestion}
             onReorderQuestions={handleReorderQuestions}
+            onFinalize={handleFinalize}
           />
         </div>
       </div>
@@ -216,12 +274,14 @@ function CreateSurveyContent() {
         <SurveyPreview
           surveyState={surveyState}
           isLoading={isLoading}
+          isSaving={isSaving}
           onUpdateTitle={handleUpdateTitle}
           onUpdateDescription={handleUpdateDescription}
           onUpdateQuestion={handleUpdateQuestion}
           onDeleteQuestion={handleDeleteQuestion}
           onAddQuestion={handleAddQuestion}
           onReorderQuestions={handleReorderQuestions}
+          onFinalize={handleFinalize}
         />
       </MobileDrawer>
     </div>
