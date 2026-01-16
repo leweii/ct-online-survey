@@ -3,19 +3,21 @@
 import { useState, useCallback, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChatInterface, Message } from "@/components/ChatInterface";
+import { SurveyPreview } from "@/components/SurveyPreview";
+import { MobileDrawer } from "@/components/MobileDrawer";
 import { TurnstileVerification, isVerified } from "@/components/TurnstileVerification";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Question } from "@/types/database";
 
 interface SurveyState {
   id?: string;
-  short_code?: string;  // User-facing survey code
+  short_code?: string;
   title?: string;
   description?: string;
   questions: Question[];
-  creator_code: string;  // Legacy
-  creator_name?: string;  // Fun pet name for creator
-  custom_creator_name?: string;  // User-provided custom name
+  creator_code: string;
+  creator_name?: string;
+  custom_creator_name?: string;
   isFinalized: boolean;
 }
 
@@ -29,25 +31,56 @@ function CreateSurveyContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [verified, setVerified] = useState(() => isVerified("create"));
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
-  // Set initial welcome message when t changes
   useEffect(() => {
     setMessages([
-      {
-        id: "welcome",
-        role: "assistant",
-        content: t.create.welcomeMessage,
-      },
+      { id: "welcome", role: "assistant", content: t.create.welcomeMessage },
     ]);
   }, [t.create.welcomeMessage]);
 
+  const handleUpdateTitle = useCallback((title: string) => {
+    setSurveyState((prev) => prev ? { ...prev, title } : null);
+  }, []);
+
+  const handleUpdateDescription = useCallback((description: string) => {
+    setSurveyState((prev) => prev ? { ...prev, description } : null);
+  }, []);
+
+  const handleUpdateQuestion = useCallback((id: string, updates: Partial<Question>) => {
+    setSurveyState((prev) => {
+      if (!prev) return null;
+      return { ...prev, questions: prev.questions.map((q) => q.id === id ? { ...q, ...updates } : q) };
+    });
+  }, []);
+
+  const handleDeleteQuestion = useCallback((id: string) => {
+    setSurveyState((prev) => {
+      if (!prev) return null;
+      return { ...prev, questions: prev.questions.filter((q) => q.id !== id) };
+    });
+  }, []);
+
+  const handleAddQuestion = useCallback((question: Question) => {
+    setSurveyState((prev) => {
+      if (!prev) return { questions: [question], creator_code: "", isFinalized: false };
+      return { ...prev, questions: [...prev.questions, question] };
+    });
+  }, []);
+
+  const handleReorderQuestions = useCallback((fromIndex: number, toIndex: number) => {
+    setSurveyState((prev) => {
+      if (!prev) return null;
+      const questions = [...prev.questions];
+      const [moved] = questions.splice(fromIndex, 1);
+      questions.splice(toIndex, 0, moved);
+      return { ...prev, questions };
+    });
+  }, []);
+
   const handleSendMessage = useCallback(
     async (content: string) => {
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        role: "user",
-        content,
-      };
+      const userMessage: Message = { id: Date.now().toString(), role: "user", content };
       setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
       setStreamingContent("");
@@ -57,18 +90,13 @@ function CreateSurveyContent() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: [...messages, userMessage].map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
+            messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
             surveyState,
             customCreatorName: customCreatorName || undefined,
           }),
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to get response");
-        }
+        if (!response.ok) throw new Error("Failed to get response");
 
         const reader = response.body?.getReader();
         if (!reader) throw new Error("No reader");
@@ -93,8 +121,6 @@ function CreateSurveyContent() {
                 }
                 if (data.done && data.surveyState) {
                   setSurveyState(data.surveyState);
-
-                  // If survey is finalized, show completion message with new identifiers
                   if (data.surveyState.isFinalized && data.surveyState.short_code) {
                     const shortCode = data.surveyState.short_code;
                     const creatorName = data.surveyState.creator_name;
@@ -105,34 +131,17 @@ function CreateSurveyContent() {
                       .replace("{creatorName}", creatorName);
                   }
                 }
-              } catch {
-                // Ignore parse errors
-              }
+              } catch { /* Ignore parse errors */ }
             }
           }
         }
 
-        // Add assistant message
         if (accumulatedText) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString() + "-assistant",
-              role: "assistant",
-              content: accumulatedText,
-            },
-          ]);
+          setMessages((prev) => [...prev, { id: Date.now().toString() + "-assistant", role: "assistant", content: accumulatedText }]);
         }
       } catch (error) {
         console.error("Error:", error);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString() + "-error",
-            role: "assistant",
-            content: t.create.errorMessage,
-          },
-        ]);
+        setMessages((prev) => [...prev, { id: Date.now().toString() + "-error", role: "assistant", content: t.create.errorMessage }]);
       } finally {
         setIsLoading(false);
         setStreamingContent("");
@@ -141,59 +150,76 @@ function CreateSurveyContent() {
     [messages, surveyState, customCreatorName, t.create.surveyCreated, t.create.errorMessage]
   );
 
-  // Show verification gate if not verified
   if (!verified) {
-    return (
-      <TurnstileVerification
-        context="create"
-        onVerified={() => setVerified(true)}
-      />
-    );
+    return <TurnstileVerification context="create" onVerified={() => setVerified(true)} />;
   }
+
+  const questionCount = surveyState?.questions.length || 0;
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Header */}
-      <header className="border-b bg-white px-4 py-3 flex items-center justify-between">
+      <header className="border-b bg-white px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/")}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
+          <button onClick={() => router.push("/")} className="text-gray-600 hover:text-gray-800">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <h1 className="text-lg font-semibold">{t.create.title}</h1>
         </div>
         {surveyState?.title && (
-          <span className="text-sm text-gray-500">
-            {surveyState.questions.length} {t.create.questionsCount}
-          </span>
+          <span className="text-sm text-gray-500">{questionCount} {t.create.questionsCount}</span>
         )}
       </header>
 
-      {/* Chat */}
-      <div className="flex-1 overflow-hidden">
-        <ChatInterface
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-          placeholder={t.create.inputPlaceholder}
-          streamingContent={streamingContent}
-          aiLabel={t.chat.designerLabel}
-        />
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-full md:w-[40%] flex flex-col overflow-hidden border-r border-gray-200">
+          <ChatInterface
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            placeholder={t.create.inputPlaceholder}
+            streamingContent={streamingContent}
+            aiLabel={t.chat.designerLabel}
+          />
+        </div>
+
+        <div className="hidden md:flex md:w-[60%] flex-col bg-gray-50 overflow-hidden">
+          <SurveyPreview
+            surveyState={surveyState}
+            onUpdateTitle={handleUpdateTitle}
+            onUpdateDescription={handleUpdateDescription}
+            onUpdateQuestion={handleUpdateQuestion}
+            onDeleteQuestion={handleDeleteQuestion}
+            onAddQuestion={handleAddQuestion}
+            onReorderQuestions={handleReorderQuestions}
+          />
+        </div>
       </div>
+
+      <div className="md:hidden border-t bg-white p-3">
+        <button
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          {t.preview?.viewSurvey} ({questionCount} {t.create.questionsCount})
+        </button>
+      </div>
+
+      <MobileDrawer isOpen={isMobileDrawerOpen} onClose={() => setIsMobileDrawerOpen(false)} title={t.preview?.emptyTitle}>
+        <SurveyPreview
+          surveyState={surveyState}
+          onUpdateTitle={handleUpdateTitle}
+          onUpdateDescription={handleUpdateDescription}
+          onUpdateQuestion={handleUpdateQuestion}
+          onDeleteQuestion={handleDeleteQuestion}
+          onAddQuestion={handleAddQuestion}
+          onReorderQuestions={handleReorderQuestions}
+        />
+      </MobileDrawer>
     </div>
   );
 }
