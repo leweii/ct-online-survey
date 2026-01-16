@@ -1,5 +1,5 @@
 import { streamText } from "ai";
-import { geminiPro, parseActions, StreamActionBuffer } from "@/lib/ai";
+import { geminiPro, StreamActionBuffer } from "@/lib/ai";
 import { supabase } from "@/lib/supabase";
 import { nanoid } from "nanoid";
 import type { Question, QuestionType } from "@/types/database";
@@ -138,116 +138,146 @@ export async function POST(request: Request) {
       messages,
     });
 
-    // Process the stream and extract actions
-    let fullResponse = "";
+    // Process the stream and extract actions incrementally
     const encoder = new TextEncoder();
     const actionBuffer = new StreamActionBuffer();
+    const updatedState = { ...surveyState };
+
+    // Helper to process a single action (non-async actions only during streaming)
+    const processAction = (action: Record<string, any>): boolean => {
+      let changed = false;
+      switch (action.type) {
+        case "set_language":
+          updatedState.language = action.language;
+          changed = true;
+          break;
+        case "set_title":
+          updatedState.title = action.title;
+          changed = true;
+          break;
+        case "set_description":
+          updatedState.description = action.description;
+          changed = true;
+          break;
+        case "add_question": {
+          const questionData = action.question || {};
+          const newQuestion: Question = {
+            id: nanoid(8),
+            type: (questionData.type as QuestionType) || "text",
+            text: questionData.text || "",
+            required: questionData.required ?? true,
+            options: questionData.options,
+            validation: questionData.validation,
+          };
+          updatedState.questions = [...updatedState.questions, newQuestion];
+          changed = true;
+          break;
+        }
+        case "set_questions": {
+          const questionsData = action.questions || [];
+          updatedState.questions = questionsData.map((q: Partial<Question>) => ({
+            id: nanoid(8),
+            type: (q.type as QuestionType) || "text",
+            text: q.text || "",
+            required: q.required ?? true,
+            options: q.options,
+            validation: q.validation,
+          }));
+          changed = true;
+          break;
+        }
+        case "remove_question": {
+          const index = typeof action.index === "number" ? action.index : parseInt(action.index, 10);
+          if (!isNaN(index) && index >= 0 && index < updatedState.questions.length) {
+            updatedState.questions = updatedState.questions.filter((_, i) => i !== index);
+            changed = true;
+          }
+          break;
+        }
+        // "finalize" is handled separately as it's async
+      }
+      return changed;
+    };
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          let pendingFinalizeAction: Record<string, any> | null = null;
+
           for await (const chunk of result.textStream) {
-            fullResponse += chunk;
-            // Buffer the chunk and get safe text to emit
-            const safeText = actionBuffer.push(chunk);
+            // Buffer the chunk and get safe text + any complete actions
+            const { text: safeText, actions } = actionBuffer.push(chunk);
+
             if (safeText) {
               controller.enqueue(
                 encoder.encode(`data: ${JSON.stringify({ text: safeText })}\n\n`)
               );
             }
+
+            // Process any complete actions immediately
+            for (const action of actions) {
+              if (action.type === "finalize") {
+                pendingFinalizeAction = action;
+              } else {
+                const changed = processAction(action);
+                if (changed) {
+                  // Send intermediate state update for real-time preview
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ surveyState: updatedState })}\n\n`)
+                  );
+                }
+              }
+            }
           }
 
           // Flush any remaining buffered content
-          const remaining = actionBuffer.flush();
+          const { text: remaining, actions: remainingActions } = actionBuffer.flush();
           if (remaining) {
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ text: remaining })}\n\n`)
             );
           }
 
-          // Parse actions from complete response
-          const actions = parseActions(fullResponse);
-          const updatedState = { ...surveyState };
-
-          for (const action of actions) {
-            switch (action.type) {
-              case "set_language":
-                updatedState.language = action.language;
-                break;
-              case "set_title":
-                updatedState.title = action.title;
-                break;
-              case "set_description":
-                updatedState.description = action.description;
-                break;
-              case "add_question": {
-                const questionData = action.question || {};
-                const newQuestion: Question = {
-                  id: nanoid(8),
-                  type: (questionData.type as QuestionType) || "text",
-                  text: questionData.text || "",
-                  required: questionData.required ?? true,
-                  options: questionData.options,
-                  validation: questionData.validation,
-                };
-                updatedState.questions = [...updatedState.questions, newQuestion];
-                break;
+          // Process any remaining actions
+          for (const action of remainingActions) {
+            if (action.type === "finalize") {
+              pendingFinalizeAction = action;
+            } else {
+              const changed = processAction(action);
+              if (changed) {
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ surveyState: updatedState })}\n\n`)
+                );
               }
-              case "set_questions": {
-                // Replace all questions at once
-                const questionsData = action.questions || [];
-                updatedState.questions = questionsData.map((q: Partial<Question>) => ({
-                  id: nanoid(8),
-                  type: (q.type as QuestionType) || "text",
-                  text: q.text || "",
-                  required: q.required ?? true,
-                  options: q.options,
-                  validation: q.validation,
-                }));
-                break;
-              }
-              case "remove_question": {
-                // Remove question by index (0-based)
-                const index = typeof action.index === "number" ? action.index : parseInt(action.index, 10);
-                if (!isNaN(index) && index >= 0 && index < updatedState.questions.length) {
-                  updatedState.questions = updatedState.questions.filter((_, i) => i !== index);
-                }
-                break;
-              }
-              case "finalize":
-                // Create survey in database
-                if (updatedState.title) {
-                  // Generate new identifiers
-                  const shortCode = await generateUniqueShortCode(db);
-                  const language = updatedState.language || "zh";
-                  // Use custom creator name if provided, otherwise generate a random one
-                  const creatorName = customCreatorName?.trim() || await generateUniqueCreatorName(db, language);
+            }
+          }
 
-                  const { data: survey } = await db
-                    .from("surveys")
-                    .insert({
-                      title: updatedState.title,
-                      description: updatedState.description || null,
-                      questions: updatedState.questions,
-                      short_code: shortCode,
-                      creator_code: updatedState.creator_code,
-                      creator_name: creatorName,
-                      settings: {
-                        language: language,
-                      },
-                      status: "active",
-                    })
-                    .select()
-                    .single();
+          // Handle finalize action (async database operation)
+          if (pendingFinalizeAction && updatedState.title) {
+            const shortCode = await generateUniqueShortCode(db);
+            const language = updatedState.language || "zh";
+            const creatorName = customCreatorName?.trim() || await generateUniqueCreatorName(db, language);
 
-                  if (survey) {
-                    updatedState.id = survey.id;
-                    updatedState.short_code = survey.short_code;
-                    updatedState.creator_name = survey.creator_name;
-                    updatedState.isFinalized = true;
-                  }
-                }
-                break;
+            const { data: survey } = await db
+              .from("surveys")
+              .insert({
+                title: updatedState.title,
+                description: updatedState.description || null,
+                questions: updatedState.questions,
+                short_code: shortCode,
+                creator_code: updatedState.creator_code,
+                creator_name: creatorName,
+                settings: { language },
+                status: "active",
+              })
+              .select()
+              .single();
+
+            if (survey) {
+              updatedState.id = survey.id;
+              updatedState.short_code = survey.short_code;
+              updatedState.creator_name = survey.creator_name;
+              updatedState.isFinalized = true;
             }
           }
 

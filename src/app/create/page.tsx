@@ -119,17 +119,19 @@ function CreateSurveyContent() {
                   accumulatedText += data.text;
                   setStreamingContent(accumulatedText);
                 }
-                if (data.done && data.surveyState) {
+                // Handle intermediate state updates (real-time preview)
+                if (data.surveyState) {
                   setSurveyState(data.surveyState);
-                  if (data.surveyState.isFinalized && data.surveyState.short_code) {
-                    const shortCode = data.surveyState.short_code;
-                    const creatorName = data.surveyState.creator_name;
-                    const surveyUrl = `${window.location.origin}/survey/${shortCode}`;
-                    accumulatedText += "\n\n" + t.create.surveyCreated
-                      .replace("{shortCode}", shortCode)
-                      .replace("{surveyUrl}", surveyUrl)
-                      .replace("{creatorName}", creatorName);
-                  }
+                }
+                // Handle finalization message
+                if (data.done && data.surveyState?.isFinalized && data.surveyState?.short_code) {
+                  const shortCode = data.surveyState.short_code;
+                  const creatorName = data.surveyState.creator_name;
+                  const surveyUrl = `${window.location.origin}/survey/${shortCode}`;
+                  accumulatedText += "\n\n" + t.create.surveyCreated
+                    .replace("{shortCode}", shortCode)
+                    .replace("{surveyUrl}", surveyUrl)
+                    .replace("{creatorName}", creatorName);
                 }
               } catch { /* Ignore parse errors */ }
             }

@@ -32,21 +32,41 @@ export function removeActionTags(text: string): string {
   return text.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, "").trim();
 }
 
+export interface StreamBufferResult {
+  text: string;
+  actions: Array<Record<string, any>>;
+}
+
 /**
  * Buffer for streaming text that may contain ACTION tags.
  * Holds back potential partial tags until we're sure they're complete or not tags.
+ * Also extracts and returns complete actions for immediate processing.
  */
 export class StreamActionBuffer {
   private buffer = "";
 
   /**
-   * Add a chunk to the buffer and return safe text to emit.
+   * Add a chunk to the buffer and return safe text to emit plus any complete actions.
    * Safe text is everything before any potential partial ACTION tag.
    */
-  push(chunk: string): string {
+  push(chunk: string): StreamBufferResult {
     this.buffer += chunk;
 
-    // Remove any complete ACTION tags first
+    // Extract complete actions
+    const actions: Array<Record<string, any>> = [];
+    const actionRegex = /<ACTION>([\s\S]*?)<\/ACTION>/g;
+    let match;
+
+    while ((match = actionRegex.exec(this.buffer)) !== null) {
+      try {
+        const actionData = JSON.parse(match[1]);
+        actions.push(actionData);
+      } catch {
+        console.error("Failed to parse action:", match[1]);
+      }
+    }
+
+    // Remove complete ACTION tags
     this.buffer = this.buffer.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, "");
 
     // Find the last '<' that might be starting a tag
@@ -56,7 +76,7 @@ export class StreamActionBuffer {
       // No '<' found, safe to emit everything
       const result = this.buffer;
       this.buffer = "";
-      return result;
+      return { text: result, actions };
     }
 
     // Check if the content after '<' could be a partial ACTION tag
@@ -68,22 +88,36 @@ export class StreamActionBuffer {
       // Hold back the potential partial tag
       const safe = this.buffer.slice(0, lastAngle);
       this.buffer = potentialTag;
-      return safe;
+      return { text: safe, actions };
     }
 
     // The '<' is not part of an ACTION tag, safe to emit everything
     const result = this.buffer;
     this.buffer = "";
-    return result;
+    return { text: result, actions };
   }
 
   /**
    * Flush remaining buffer content (call at end of stream).
    */
-  flush(): string {
+  flush(): StreamBufferResult {
+    // Extract any remaining complete actions
+    const actions: Array<Record<string, any>> = [];
+    const actionRegex = /<ACTION>([\s\S]*?)<\/ACTION>/g;
+    let match;
+
+    while ((match = actionRegex.exec(this.buffer)) !== null) {
+      try {
+        const actionData = JSON.parse(match[1]);
+        actions.push(actionData);
+      } catch {
+        console.error("Failed to parse action:", match[1]);
+      }
+    }
+
     // Remove any remaining complete action tags and return
     const result = this.buffer.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, "");
     this.buffer = "";
-    return result;
+    return { text: result, actions };
   }
 }
