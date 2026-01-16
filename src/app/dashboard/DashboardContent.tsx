@@ -55,24 +55,26 @@ export function DashboardContent() {
       // Fetch response counts for each survey
       const surveysWithCounts = await Promise.all(
         data.map(async (survey) => {
+          const defaultCounts = { responseCount: 0, completedCount: 0, partialCount: 0, inProgressCount: 0 };
           try {
             const resRes = await fetch(`/api/surveys/${survey.id}/responses`);
-            const responses: Array<{ status: string }> = resRes.ok ? await resRes.json() : [];
+            if (!resRes.ok) return { ...survey, ...defaultCounts };
 
-            // 按状态分组计数
-            const completedCount = responses.filter((r) => r.status === 'completed').length;
-            const partialCount = responses.filter((r) => r.status === 'partial').length;
-            const inProgressCount = responses.filter((r) => r.status === 'in_progress').length;
+            const responses: Array<{ status: string }> = await resRes.json();
+            const counts = responses.reduce(
+              (acc, r) => {
+                acc.responseCount++;
+                if (r.status === "completed") acc.completedCount++;
+                else if (r.status === "partial") acc.partialCount++;
+                else if (r.status === "in_progress") acc.inProgressCount++;
+                return acc;
+              },
+              { responseCount: 0, completedCount: 0, partialCount: 0, inProgressCount: 0 }
+            );
 
-            return {
-              ...survey,
-              responseCount: responses.length,
-              completedCount,
-              partialCount,
-              inProgressCount,
-            };
+            return { ...survey, ...counts };
           } catch {
-            return { ...survey, responseCount: 0, completedCount: 0, partialCount: 0, inProgressCount: 0 };
+            return { ...survey, ...defaultCounts };
           }
         })
       );

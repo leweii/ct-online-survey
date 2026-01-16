@@ -13,34 +13,26 @@ interface QuestionInputProps {
   inline?: boolean; // For chat mode styling
 }
 
-// Helper to safely get display text from option (handles both string and object formats)
-function getOptionText(option: unknown): string {
-  if (typeof option === "string") {
-    return option;
-  }
+// Helper to extract string property from option object, with priority order
+function extractOptionProperty(option: unknown, priorityKeys: string[]): string {
+  if (typeof option === "string") return option;
   if (option && typeof option === "object") {
-    // Handle common object formats like {label: "..."}, {text: "..."}, {value: "..."}
     const obj = option as Record<string, unknown>;
-    if (typeof obj.label === "string") return obj.label;
-    if (typeof obj.text === "string") return obj.text;
-    if (typeof obj.value === "string") return obj.value;
-    if (typeof obj.name === "string") return obj.name;
+    for (const key of priorityKeys) {
+      if (typeof obj[key] === "string") return obj[key];
+    }
   }
   return String(option);
 }
 
-// Helper to get option value for comparison
+// Display text prioritizes: label > text > value > name
+function getOptionText(option: unknown): string {
+  return extractOptionProperty(option, ["label", "text", "value", "name"]);
+}
+
+// Value prioritizes: value > label > text
 function getOptionValue(option: unknown): string {
-  if (typeof option === "string") {
-    return option;
-  }
-  if (option && typeof option === "object") {
-    const obj = option as Record<string, unknown>;
-    if (typeof obj.value === "string") return obj.value;
-    if (typeof obj.label === "string") return obj.label;
-    if (typeof obj.text === "string") return obj.text;
-  }
-  return String(option);
+  return extractOptionProperty(option, ["value", "label", "text"]);
 }
 
 export function QuestionInput({

@@ -60,17 +60,13 @@ export default function SurveyResponsePage() {
     setMode("form");
   };
 
-  const handleFormSubmit = async (answers: Record<string, unknown>) => {
+  const submitResponse = async (answers: Record<string, unknown>, status: "completed" | "partial"): Promise<void> => {
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/responses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          survey_id: surveyId,
-          answers,
-          status: "completed",
-        }),
+        body: JSON.stringify({ survey_id: surveyId, answers, status }),
       });
 
       if (!res.ok) throw new Error(t.survey.submitFailed);
@@ -83,28 +79,8 @@ export default function SurveyResponsePage() {
     }
   };
 
-  const handlePartialSubmit = async (answers: Record<string, unknown>) => {
-    setIsSubmitting(true);
-    try {
-      const res = await fetch("/api/responses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          survey_id: surveyId,
-          answers,
-          status: "partial",
-        }),
-      });
-
-      if (!res.ok) throw new Error(t.survey.submitFailed);
-      setFormCompleted(true);
-    } catch (error) {
-      console.error("Submit error:", error);
-      alert(t.survey.submitFailedMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleFormSubmit = (answers: Record<string, unknown>): Promise<void> => submitResponse(answers, "completed");
+  const handlePartialSubmit = (answers: Record<string, unknown>): Promise<void> => submitResponse(answers, "partial");
 
   // Show verification gate if not verified
   if (!verified) {
