@@ -59,9 +59,6 @@ export function DashboardContent() {
             const resRes = await fetch(`/api/surveys/${survey.id}/responses`);
             const responses: Array<{ status: string }> = resRes.ok ? await resRes.json() : [];
 
-            // Debug
-            console.log(`Survey "${survey.title}" (${survey.id}): ${responses.length} responses`, responses.map(r => r.status));
-
             // 按状态分组计数
             const completedCount = responses.filter((r) => r.status === 'completed').length;
             const partialCount = responses.filter((r) => r.status === 'partial').length;
