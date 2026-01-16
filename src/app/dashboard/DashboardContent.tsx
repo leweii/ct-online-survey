@@ -150,7 +150,7 @@ export function DashboardContent() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/")}
@@ -175,7 +175,7 @@ export function DashboardContent() {
       </header>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto p-4">
+      <main className="max-w-6xl mx-auto p-4">
         {loading ? (
           <div className="text-center py-12">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -215,7 +215,7 @@ export function DashboardContent() {
                 <span className="text-sm text-gray-600">{t.dashboard.hideClosed}</span>
               </label>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2">
             {surveys
               .filter((survey) => !hideClosed || survey.status !== "closed")
               .map((survey) => (
