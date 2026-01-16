@@ -1,271 +1,116 @@
 import { NextResponse } from "next/server";
 import { generateText } from "ai";
 import { geminiFlash } from "@/lib/ai";
+import { analyticsTools } from "@/lib/analytics-tools";
 
-// Bilingual system prompts for the analytics agent
 const SYSTEM_PROMPTS = {
-  en: `You are an expert survey data analyst agent. Your role is to provide actionable insights, not just answer questions.
+  en: `You are an expert survey data analyst agent with access to data querying tools.
 
-## Your Core Principles
-1. **NEVER refuse to help** - Even with zero data, provide valuable guidance (benchmarks, best practices, data collection strategies)
-2. **Be proactive** - Don't wait to be asked. Identify patterns, anomalies, and opportunities
-3. **Domain expertise** - Adapt your analysis based on the survey topic
-4. **Actionable insights** - Every response should include specific recommendations
+## How to Work
+1. **Always use tools to get data** - Never guess or assume data. Call tools to fetch actual statistics.
+2. **Start with getSurveyOverview** - Understand the survey structure and response counts first.
+3. **Use getQuestionStats for specifics** - Get detailed stats for individual questions.
+4. **Use getFilteredResponses for segments** - When asked about subgroups or specific criteria.
+5. **Use crossTabulate for relationships** - When asked how answers relate to each other.
 
-## Domain Expertise Guidelines
-Identify the survey domain from questions and provide specialized analysis:
-- **Customer Satisfaction (NPS, CSAT, CES)**: Compare to industry benchmarks (NPS: >50 excellent, 0-30 needs improvement), identify detractors vs promoters, suggest service recovery strategies
-- **Employee Engagement**: Interpret engagement scores, identify retention risks, recommend culture improvements
-- **Market Research**: Segment analysis, competitive positioning, product-market fit signals
-- **Event/Course Feedback**: Highlight strengths to maintain, prioritize improvement areas
-- **General Surveys**: Focus on response quality, completion patterns, question effectiveness
-
-## When Data is Limited or Zero
-- Acknowledge the current state without apologizing
-- Provide industry benchmarks for comparison
-- Suggest effective data collection strategies
-- Offer best practices for the domain
-- Recommend survey improvements to boost response rates
+## Analysis Guidelines
+- **Be data-driven** - Only cite numbers from tool results, never invent statistics.
+- **Domain expertise** - Interpret results based on survey type (NPS >50 excellent, 0-30 needs improvement, etc.)
+- **Actionable insights** - Always provide 2-3 specific recommendations based on the data.
+- **Handle zero data gracefully** - If no responses, suggest data collection strategies and provide industry benchmarks.
 
 ## Response Format
 - Use clear headings and bullet points
 - Lead with the most important insight
-- Include specific numbers when available
-- End with 1-3 actionable recommendations
+- Include specific numbers from tool results
+- End with actionable recommendations
 
-Keep responses concise but comprehensive. Be confident and helpful.`,
+Be confident, helpful, and data-driven.`,
 
-  zh: `你是一位专业的问卷数据分析师。你的角色是提供可操作的洞察，而不仅仅是回答问题。
+  zh: `你是一位专业的问卷数据分析师，可以使用数据查询工具。
 
-## 核心原则
-1. **永不拒绝帮助** - 即使没有数据，也要提供有价值的指导（行业基准、最佳实践、数据收集策略）
-2. **主动分析** - 不要等待被问及。主动识别模式、异常和机会
-3. **领域专长** - 根据问卷主题调整分析方式
-4. **可操作建议** - 每次回复都应包含具体建议
+## 工作方式
+1. **始终使用工具获取数据** - 不要猜测或假设数据，调用工具获取真实统计信息。
+2. **首先使用 getSurveyOverview** - 先了解问卷结构和回复数量。
+3. **使用 getQuestionStats 获取详情** - 获取单个问题的详细统计。
+4. **使用 getFilteredResponses 进行分段** - 当被问及子群体或特定条件时。
+5. **使用 crossTabulate 分析关系** - 当被问及答案之间的关联时。
 
-## 领域专长指南
-根据问题识别问卷领域，提供专业分析：
-- **客户满意度（NPS、CSAT、CES）**：与行业基准比较（NPS：>50优秀，0-30需改进），识别贬损者与推荐者，建议服务补救策略
-- **员工敬业度**：解读敬业度分数，识别留存风险，推荐文化改进措施
-- **市场调研**：细分分析、竞争定位、产品市场契合信号
-- **活动/课程反馈**：突出需保持的优势，优先改进领域
-- **通用问卷**：关注回复质量、完成模式、问题有效性
-
-## 数据有限或为零时
-- 客观说明当前状态，不必道歉
-- 提供行业基准供参考
-- 建议有效的数据收集策略
-- 提供该领域的最佳实践
-- 推荐问卷改进以提高回复率
+## 分析指南
+- **以数据为驱动** - 只引用工具返回的数字，不要编造统计数据。
+- **领域专长** - 根据问卷类型解读结果（NPS >50 优秀，0-30 需改进等）
+- **可操作建议** - 始终根据数据提供2-3条具体建议。
+- **优雅处理零数据** - 如果没有回复，建议数据收集策略并提供行业基准。
 
 ## 回复格式
 - 使用清晰的标题和要点
 - 优先展示最重要的洞察
-- 有数据时引用具体数字
-- 以1-3条可操作建议结尾
+- 引用工具返回的具体数字
+- 以可操作建议结尾
 
-保持回复简洁但全面。自信且有帮助。`,
+自信、有帮助、以数据为驱动。`,
 };
 
-// Proactive analysis prompts
 const PROACTIVE_PROMPTS = {
-  en: `Analyze this survey data and provide an initial insight report. Include:
-1. **Key Findings**: What stands out from the data (or note if no responses yet)
-2. **Domain Assessment**: What type of survey is this and what domain expertise applies
-3. **Data Quality**: Response rate, completion patterns, any concerns
-4. **Top Recommendations**: 2-3 specific actions the survey creator should take
+  en: `Analyze this survey and provide an initial insight report.
 
-If there's no response data yet:
-- Identify the survey domain from the questions
-- Provide relevant industry benchmarks
-- Suggest strategies to increase response rates
-- Offer tips for the specific survey type
+First, call getSurveyOverview to understand the survey structure and response statistics.
+Then, call getQuestionStats for key questions to gather specific data.
 
-Be direct and actionable. Start with the most valuable insight.`,
+Your report should include:
+1. **Overview**: Survey type, total responses, completion rate
+2. **Key Findings**: Highlight interesting patterns from the data
+3. **Question Analysis**: Stats for the most important questions
+4. **Recommendations**: 2-3 actionable next steps
 
-  zh: `分析此问卷数据并提供初始洞察报告。包括：
-1. **关键发现**：数据中的突出点（如果还没有回复则说明）
-2. **领域评估**：这是什么类型的问卷，适用什么领域专长
-3. **数据质量**：回复率、完成模式、任何关注点
-4. **首要建议**：问卷创建者应采取的2-3个具体行动
+If there are no responses yet, analyze the survey design and provide guidance on data collection.`,
 
-如果还没有回复数据：
-- 从问题识别问卷领域
-- 提供相关行业基准
-- 建议提高回复率的策略
-- 提供针对特定问卷类型的建议
+  zh: `分析此问卷并提供初始洞察报告。
 
-直接且可操作。从最有价值的洞察开始。`,
+首先，调用 getSurveyOverview 了解问卷结构和回复统计。
+然后，调用 getQuestionStats 获取关键问题的具体数据。
+
+报告应包括：
+1. **概览**：问卷类型、总回复数、完成率
+2. **关键发现**：突出数据中的有趣模式
+3. **问题分析**：最重要问题的统计数据
+4. **建议**：2-3个可操作的下一步
+
+如果还没有回复，分析问卷设计并提供数据收集指导。`,
 };
-
-interface SurveyContext {
-  id: string;
-  title: string;
-  description?: string;
-  questions: Array<{ id: string; text: string; type: string; options?: string[] }>;
-  status: string;
-}
-
-interface ResponseContext {
-  survey_id: string;
-  answers: Record<string, unknown>;
-  status: string;
-  started_at: string;
-}
-
-interface StatsContext {
-  totalResponses: number;
-  completedResponses: number;
-  partialResponses: number;
-  completionRate: number;
-  todayResponses: number;
-}
 
 interface AnalyticsRequest {
   message: string;
-  creatorCode: string;
+  surveyId: string;
   language?: "en" | "zh";
   isInit?: boolean;
-  context: {
-    surveys: SurveyContext[];
-    responses: ResponseContext[];
-    stats: StatsContext | null;
-  };
-}
-
-function buildDataContext(
-  context: AnalyticsRequest["context"],
-  language: "en" | "zh"
-): string {
-  const isEn = language === "en";
-  let dataContext = isEn ? "\n\n## Current Data\n" : "\n\n## 当前数据\n";
-
-  // Survey info
-  if (context.surveys.length > 0) {
-    const survey = context.surveys[0];
-    dataContext += isEn ? `\n### Survey: "${survey.title}"\n` : `\n### 问卷：「${survey.title}」\n`;
-    if (survey.description) {
-      dataContext += isEn ? `Description: ${survey.description}\n` : `描述：${survey.description}\n`;
-    }
-    dataContext += isEn
-      ? `Status: ${survey.status}, Questions: ${survey.questions.length}\n`
-      : `状态：${survey.status}，问题数：${survey.questions.length}\n`;
-
-    // List questions for domain detection
-    dataContext += isEn ? `\n### Questions:\n` : `\n### 问题列表：\n`;
-    survey.questions.forEach((q, idx) => {
-      dataContext += `${idx + 1}. [${q.type}] ${q.text}`;
-      if (q.options && q.options.length > 0) {
-        dataContext += ` (${isEn ? "Options" : "选项"}: ${q.options.join(", ")})`;
-      }
-      dataContext += "\n";
-    });
-  }
-
-  // Stats
-  if (context.stats) {
-    dataContext += isEn ? `\n### Statistics:\n` : `\n### 统计数据：\n`;
-    dataContext += isEn
-      ? `- Total responses: ${context.stats.totalResponses}\n`
-      : `- 回复总数：${context.stats.totalResponses}\n`;
-    dataContext += isEn
-      ? `- Completed: ${context.stats.completedResponses}\n`
-      : `- 已完成：${context.stats.completedResponses}\n`;
-    dataContext += isEn
-      ? `- Partial: ${context.stats.partialResponses}\n`
-      : `- 部分完成：${context.stats.partialResponses}\n`;
-    dataContext += isEn
-      ? `- Completion rate: ${context.stats.completionRate}%\n`
-      : `- 完成率：${context.stats.completionRate}%\n`;
-    dataContext += isEn
-      ? `- Today's new: ${context.stats.todayResponses}\n`
-      : `- 今日新增：${context.stats.todayResponses}\n`;
-  } else {
-    dataContext += isEn
-      ? `\n### Statistics: No responses yet\n`
-      : `\n### 统计数据：暂无回复\n`;
-  }
-
-  // Response details
-  if (context.responses.length > 0 && context.surveys.length > 0) {
-    const survey = context.surveys[0];
-    const responses = context.responses.filter((r) => r.survey_id === survey.id);
-
-    if (responses.length > 0) {
-      dataContext += isEn ? `\n### Response Details:\n` : `\n### 回复详情：\n`;
-
-      // Analyze answer distribution for each question
-      survey.questions.forEach((q, qIndex) => {
-        const answersForQuestion = responses
-          .map((r) => r.answers[q.id])
-          .filter((a) => a !== undefined && a !== null && a !== "");
-
-        if (answersForQuestion.length > 0) {
-          dataContext += `Q${qIndex + 1} "${q.text}": ${answersForQuestion.length} ${isEn ? "answers" : "个回答"}`;
-
-          if (q.type === "multiple_choice" && q.options) {
-            const distribution: Record<string, number> = {};
-            answersForQuestion.forEach((a) => {
-              const answer = String(a);
-              distribution[answer] = (distribution[answer] || 0) + 1;
-            });
-            const distStr = Object.entries(distribution)
-              .map(([opt, count]) => `${opt}(${count})`)
-              .join(", ");
-            dataContext += ` - ${distStr}`;
-          } else if (q.type === "rating") {
-            const nums = answersForQuestion.map((a) => Number(a)).filter((n) => !isNaN(n));
-            if (nums.length > 0) {
-              const avg = (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1);
-              const min = Math.min(...nums);
-              const max = Math.max(...nums);
-              dataContext += isEn
-                ? ` - Avg: ${avg}, Range: ${min}-${max}`
-                : ` - 平均：${avg}，范围：${min}-${max}`;
-            }
-          } else if (q.type === "yes_no") {
-            const yesCount = answersForQuestion.filter((a) => a === "yes").length;
-            const noCount = answersForQuestion.filter((a) => a === "no").length;
-            dataContext += isEn
-              ? ` - Yes: ${yesCount}, No: ${noCount}`
-              : ` - 是：${yesCount}，否：${noCount}`;
-          } else if (q.type === "text") {
-            // Show sample text responses
-            const samples = answersForQuestion.slice(0, 3).map((a) => `"${String(a).slice(0, 50)}..."`);
-            dataContext += isEn ? ` - Samples: ${samples.join("; ")}` : ` - 示例：${samples.join("；")}`;
-          }
-
-          dataContext += "\n";
-        } else {
-          dataContext += `Q${qIndex + 1} "${q.text}": ${isEn ? "No answers yet" : "暂无回答"}\n`;
-        }
-      });
-    }
-  }
-
-  return dataContext;
 }
 
 export async function POST(request: Request) {
   try {
     const body: AnalyticsRequest = await request.json();
-    const { message, context, language = "zh", isInit = false } = body;
+    const { message, surveyId, language = "zh", isInit = false } = body;
 
-    // For init requests, we don't require a message
+    if (!surveyId) {
+      return NextResponse.json({ error: "Survey ID is required" }, { status: 400 });
+    }
+
     if (!isInit && !message) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
     const systemPrompt = SYSTEM_PROMPTS[language];
-    const dataContext = buildDataContext(context, language);
-
-    // Determine the prompt
     const userPrompt = isInit ? PROACTIVE_PROMPTS[language] : message;
+
+    // Include surveyId in the prompt so the agent knows which survey to query
+    const contextualPrompt = `Survey ID: ${surveyId}\n\n${userPrompt}`;
 
     const { text } = await generateText({
       model: geminiFlash,
-      system: systemPrompt + dataContext,
-      prompt: userPrompt,
+      system: systemPrompt,
+      prompt: contextualPrompt,
+      tools: analyticsTools,
+      maxSteps: 5,
     });
 
     return NextResponse.json({ text });
