@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -27,6 +28,7 @@ export default function RootLayout({
           <Footer />
           <LanguageSelector />
         </LanguageProvider>
+        <Analytics />
       </body>
     </html>
   );
