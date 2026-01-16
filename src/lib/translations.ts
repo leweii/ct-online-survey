@@ -74,10 +74,10 @@ export const translations = {
       viewSurvey: "Preview Survey",
       surveyFinalized: "Survey Published",
       editDisabled: "Editing not available after publication",
-      finalize: "Save & Publish",
+      finalize: "Save Draft",
       finalizing: "Saving...",
-      updateSurvey: "Update Survey",
-      surveyUpdated: "Survey updated",
+      updateSurvey: "Update Draft",
+      surveyUpdated: "Draft saved",
     },
 
     // Survey page
@@ -154,6 +154,7 @@ export const translations = {
       closed: "Completed",
       activate: "Publish",
       close: "Close",
+      edit: "Edit",
       analyze: "Analyze",
       exportCSV: "Export Data",
       copyLink: "Copy Link",
@@ -285,10 +286,10 @@ export const translations = {
       viewSurvey: "预览问卷",
       surveyFinalized: "问卷已发布",
       editDisabled: "问卷发布后暂不支持编辑",
-      finalize: "保存并发布",
+      finalize: "保存草稿",
       finalizing: "保存中...",
-      updateSurvey: "更新问卷",
-      surveyUpdated: "问卷已更新",
+      updateSurvey: "更新草稿",
+      surveyUpdated: "草稿已保存",
     },
 
     // Survey page
@@ -365,6 +366,7 @@ export const translations = {
       closed: "已结束",
       activate: "发布",
       close: "结束",
+      edit: "编辑",
       analyze: "分析",
       exportCSV: "导出数据",
       copyLink: "复制链接",

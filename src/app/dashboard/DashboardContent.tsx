@@ -229,6 +229,7 @@ export function DashboardContent() {
                 onExport={() => handleExport(survey.id)}
                 onStatusChange={(status) => handleStatusChange(survey.id, status)}
                 onAnalyze={() => router.push(`/dashboard/chat?code=${encodeURIComponent(creatorCode)}&survey=${survey.id}`)}
+                onEdit={() => router.push(`/create?edit=${survey.id}&creator=${encodeURIComponent(creatorCode)}`)}
               />
             ))}
             </div>

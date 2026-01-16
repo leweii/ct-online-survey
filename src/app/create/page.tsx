@@ -26,6 +26,7 @@ function CreateSurveyContent() {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const customCreatorName = searchParams.get("creator") || "";
+  const editSurveyId = searchParams.get("edit") || "";
   const [messages, setMessages] = useState<Message[]>([]);
   const [surveyState, setSurveyState] = useState<SurveyState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,12 +34,53 @@ function CreateSurveyContent() {
   const [streamingContent, setStreamingContent] = useState("");
   const [verified, setVerified] = useState(() => isVerified("create"));
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isLoadingEdit, setIsLoadingEdit] = useState(!!editSurveyId);
+
+  // Load existing survey for editing
+  useEffect(() => {
+    async function loadSurvey() {
+      if (!editSurveyId) return;
+
+      setIsLoadingEdit(true);
+      try {
+        const res = await fetch(`/api/surveys/${editSurveyId}`);
+        if (!res.ok) throw new Error("Failed to load survey");
+
+        const survey = await res.json();
+        setSurveyState({
+          id: survey.id,
+          short_code: survey.short_code,
+          title: survey.title,
+          description: survey.description,
+          questions: survey.questions || [],
+          creator_code: survey.creator_code,
+          creator_name: survey.creator_name,
+          isFinalized: false, // Allow editing
+        });
+
+        setMessages([
+          { id: "edit-welcome", role: "assistant", content: t.create.welcomeMessage },
+        ]);
+      } catch (error) {
+        console.error("Error loading survey:", error);
+        setMessages([
+          { id: "error", role: "assistant", content: t.create.errorMessage },
+        ]);
+      } finally {
+        setIsLoadingEdit(false);
+      }
+    }
+
+    loadSurvey();
+  }, [editSurveyId, t.create.welcomeMessage, t.create.errorMessage]);
 
   useEffect(() => {
-    setMessages([
-      { id: "welcome", role: "assistant", content: t.create.welcomeMessage },
-    ]);
-  }, [t.create.welcomeMessage]);
+    if (!editSurveyId) {
+      setMessages([
+        { id: "welcome", role: "assistant", content: t.create.welcomeMessage },
+      ]);
+    }
+  }, [t.create.welcomeMessage, editSurveyId]);
 
   const handleUpdateTitle = useCallback((title: string) => {
     setSurveyState((prev) => prev ? { ...prev, title } : null);
@@ -210,6 +252,17 @@ function CreateSurveyContent() {
 
   if (!verified) {
     return <TurnstileVerification context="create" onVerified={() => setVerified(true)} />;
+  }
+
+  if (isLoadingEdit) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">{t.loading}</p>
+        </div>
+      </div>
+    );
   }
 
   const questionCount = surveyState?.questions.length || 0;

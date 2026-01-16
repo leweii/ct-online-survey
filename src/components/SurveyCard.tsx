@@ -12,6 +12,7 @@ interface SurveyCardProps {
   onExport?: () => void;
   onStatusChange?: (status: "draft" | "active" | "closed") => void;
   onAnalyze?: () => void;
+  onEdit?: () => void;
 }
 
 export function SurveyCard({
@@ -23,6 +24,7 @@ export function SurveyCard({
   onExport,
   onStatusChange,
   onAnalyze,
+  onEdit,
 }: SurveyCardProps) {
   const { t } = useLanguage();
 
@@ -91,6 +93,14 @@ export function SurveyCard({
 
       {/* Action Buttons */}
       <div className="flex gap-2 flex-wrap">
+        {onEdit && survey.status === "draft" && (
+          <button
+            onClick={onEdit}
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            {t.card.edit}
+          </button>
+        )}
         {onStatusChange && survey.status === "draft" && (
           <button
             onClick={() => onStatusChange("active")}
