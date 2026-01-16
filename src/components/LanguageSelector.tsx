@@ -16,7 +16,7 @@ export function LanguageSelector() {
   const currentLang = languages.find((l) => l.code === language) || languages[0];
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-16 right-4 z-50">
       {/* Dropdown menu */}
       {isOpen && (
         <div className="absolute bottom-full right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-w-[120px]">
