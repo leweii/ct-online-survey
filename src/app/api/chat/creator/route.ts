@@ -80,16 +80,18 @@ const CREATOR_SYSTEM_PROMPT = `You are a professional survey design expert. You 
 ## Action Formats:
 - Set language (ALWAYS include first): <ACTION>{"type": "set_language", "language": "zh"}</ACTION>
 - Set title and description: <ACTION>{"type": "set_title", "title": "Survey Title"}</ACTION><ACTION>{"type": "set_description", "description": "Description text"}</ACTION>
-- Set all questions at once: <ACTION>{"type": "set_questions", "questions": [{"type": "multiple_choice", "text": "Question?", "required": true, "options": ["A", "B", "C"]}, {"type": "rating", "text": "Rate X?", "required": true}]}</ACTION>
+- Set all questions at once (ONLY for initial creation): <ACTION>{"type": "set_questions", "questions": [...]}</ACTION>
 - Add one question: <ACTION>{"type": "add_question", "question": {"type": "text", "text": "Question?", "required": true}}</ACTION>
-- Remove question by number: <ACTION>{"type": "remove_question", "index": 1}</ACTION>
+- Update a specific question (use 0-based index): <ACTION>{"type": "update_question", "index": 0, "updates": {"text": "New text", "options": ["A", "B"]}}</ACTION>
+- Remove question by number (use 0-based index): <ACTION>{"type": "remove_question", "index": 1}</ACTION>
 - Finalize survey: <ACTION>{"type": "finalize"}</ACTION>
 
 ## Professional Guidelines:
 - ALWAYS detect language and include set_language action in your FIRST response
 - **MUST generate 21-28 questions on first response** - no fewer than 21 questions
 - Design questions that yield actionable insights
-- Use set_questions to set all questions at once (not add_question for each)
+- Use set_questions ONLY for initial survey creation. For modifications, use update_question, add_question, or remove_question
+- **CRITICAL**: When user has edited the survey, PRESERVE their edits. Only modify what they ask you to change.
 - Mix question types strategically: use rating for satisfaction, multiple_choice for preferences, text for feedback
 - Make most questions required; leave 2-3 optional for open feedback
 - For multiple choice: provide balanced, comprehensive options with an "其他/Other" option when appropriate
@@ -110,26 +112,35 @@ export async function POST(request: Request) {
       isFinalized: false,
     };
 
-    // Build context about current survey state
-    let stateContext = "\n\nCurrent survey state:\n";
+    // Build context about current survey state (user may have edited this in the preview panel)
+    let stateContext = "\n\n## IMPORTANT: Current Survey State (User Edited)\n";
+    stateContext += "The user can edit the survey directly in the preview panel. The state below reflects their latest edits.\n";
+    stateContext += "**You MUST preserve this state exactly unless the user explicitly asks for changes.**\n\n";
+
     if (surveyState.title) {
-      stateContext += `- Title: ${surveyState.title}\n`;
+      stateContext += `Title: ${surveyState.title}\n`;
     }
     if (surveyState.description) {
-      stateContext += `- Description: ${surveyState.description}\n`;
+      stateContext += `Description: ${surveyState.description}\n`;
     }
     if (surveyState.questions.length > 0) {
-      stateContext += `- Questions (${surveyState.questions.length}):\n`;
+      stateContext += `\nQuestions (${surveyState.questions.length}):\n`;
       surveyState.questions.forEach((q, i) => {
-        stateContext += `  ${i + 1}. [${q.type}${q.required ? ", required" : ""}] ${q.text}\n`;
+        stateContext += `  ${i + 1}. [${q.type}${q.required ? ", required" : ""}] ${q.text}`;
+        if (q.options && q.options.length > 0) {
+          stateContext += ` | Options: ${q.options.join(", ")}`;
+        }
+        stateContext += `\n`;
       });
+      stateContext += "\n**DO NOT use set_questions to replace all questions unless the user asks to regenerate the entire survey.**\n";
+      stateContext += "**Use add_question to add new questions, remove_question to delete specific questions.**\n";
     }
     if (!surveyState.title) {
-      stateContext += "- No title yet (ask for title first)\n";
+      stateContext += "- No title yet\n";
     } else if (!surveyState.description) {
-      stateContext += "- No description yet (ask for description next)\n";
+      stateContext += "- No description yet\n";
     } else if (surveyState.questions.length === 0) {
-      stateContext += "- No questions yet (start adding questions)\n";
+      stateContext += "- No questions yet (generate initial questions)\n";
     }
 
     const result = streamText({
@@ -190,6 +201,17 @@ export async function POST(request: Request) {
           const index = typeof action.index === "number" ? action.index : parseInt(action.index, 10);
           if (!isNaN(index) && index >= 0 && index < updatedState.questions.length) {
             updatedState.questions = updatedState.questions.filter((_, i) => i !== index);
+            changed = true;
+          }
+          break;
+        }
+        case "update_question": {
+          const index = typeof action.index === "number" ? action.index : parseInt(action.index, 10);
+          if (!isNaN(index) && index >= 0 && index < updatedState.questions.length) {
+            const updates = action.updates || {};
+            updatedState.questions = updatedState.questions.map((q, i) =>
+              i === index ? { ...q, ...updates } : q
+            );
             changed = true;
           }
           break;

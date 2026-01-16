@@ -20,6 +20,7 @@ interface SurveyState {
 
 interface SurveyPreviewProps {
   surveyState: SurveyState | null;
+  isLoading?: boolean;
   onUpdateTitle: (title: string) => void;
   onUpdateDescription: (description: string) => void;
   onUpdateQuestion: (id: string, updates: Partial<Question>) => void;
@@ -30,6 +31,7 @@ interface SurveyPreviewProps {
 
 export function SurveyPreview({
   surveyState,
+  isLoading = false,
   onUpdateTitle,
   onUpdateDescription,
   onUpdateQuestion,
@@ -66,16 +68,32 @@ export function SurveyPreview({
   if (!surveyState || surveyState.questions.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center p-8">
-        <div className="text-6xl mb-4">📝</div>
-        <h3 className="text-lg font-medium text-gray-700 mb-2">{t.preview?.emptyTitle}</h3>
-        <p className="text-gray-500 mb-1">{t.preview?.emptyDescription}</p>
-        <p className="text-sm text-gray-400">{t.preview?.emptyHint}</p>
+        {isLoading ? (
+          <>
+            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <h3 className="text-lg font-medium text-gray-700 mb-2">{t.preview?.generating}</h3>
+            <p className="text-gray-500">{t.preview?.generatingHint}</p>
+          </>
+        ) : (
+          <>
+            <div className="text-6xl mb-4">📝</div>
+            <h3 className="text-lg font-medium text-gray-700 mb-2">{t.preview?.emptyTitle}</h3>
+            <p className="text-gray-500 mb-1">{t.preview?.emptyDescription}</p>
+            <p className="text-sm text-gray-400">{t.preview?.emptyHint}</p>
+          </>
+        )}
       </div>
     );
   }
 
   return (
     <div className="h-full flex flex-col">
+      {isLoading && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex items-center justify-center gap-2">
+          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-blue-700 text-sm font-medium">{t.preview?.updating}</span>
+        </div>
+      )}
       {isDisabled && (
         <div className="bg-green-50 border-b border-green-200 px-4 py-2 text-center">
           <span className="text-green-700 text-sm font-medium">✓ {t.preview?.surveyFinalized}</span>

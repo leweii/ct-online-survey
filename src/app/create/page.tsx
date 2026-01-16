@@ -189,6 +189,7 @@ function CreateSurveyContent() {
         <div className="hidden md:flex md:w-[60%] flex-col bg-gray-50 overflow-hidden">
           <SurveyPreview
             surveyState={surveyState}
+            isLoading={isLoading}
             onUpdateTitle={handleUpdateTitle}
             onUpdateDescription={handleUpdateDescription}
             onUpdateQuestion={handleUpdateQuestion}
@@ -214,6 +215,7 @@ function CreateSurveyContent() {
       <MobileDrawer isOpen={isMobileDrawerOpen} onClose={() => setIsMobileDrawerOpen(false)} title={t.preview?.emptyTitle}>
         <SurveyPreview
           surveyState={surveyState}
+          isLoading={isLoading}
           onUpdateTitle={handleUpdateTitle}
           onUpdateDescription={handleUpdateDescription}
           onUpdateQuestion={handleUpdateQuestion}
