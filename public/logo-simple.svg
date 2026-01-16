@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6"/>
+      <stop offset="100%" style="stop-color:#8B5CF6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="240" height="240" rx="48" fill="url(#grad)"/>
+
+  <!-- Chat bubble with checklist -->
+  <path d="M50 60
+           Q50 40 70 40
+           L190 40
+           Q210 40 210 60
+           L210 140
+           Q210 160 190 160
+           L100 160
+           L70 195
+           L70 160
+           Q50 160 50 140
+           Z"
+        fill="white"/>
+
+  <!-- Checkmarks -->
+  <path d="M75 80 L85 90 L105 65" fill="none" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="120" y="72" width="70" height="12" rx="6" fill="#E0E7FF"/>
+
+  <path d="M75 120 L85 130 L105 105" fill="none" stroke="#8B5CF6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="120" y="112" width="50" height="12" rx="6" fill="#EDE9FE"/>
+</svg>

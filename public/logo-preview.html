@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatSurvey Logo Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f3f4f6;
+      padding: 40px;
+    }
+    h1 { color: #1f2937; margin-bottom: 40px; }
+    h2 { color: #4b5563; margin: 30px 0 15px; font-size: 18px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+    .card-dark {
+      background: #1f2937;
+    }
+    .card img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    .label {
+      text-align: center;
+      margin-top: 15px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .card-dark .label {
+      color: #9ca3af;
+    }
+    .sizes {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .size-item {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>ChatSurvey Logo Assets</h1>
+
+  <h2>Primary Logo (240x240 - Product Hunt Thumbnail)</h2>
+  <div class="grid">
+    <div class="card">
+      <img src="logo.svg" alt="Primary Logo" width="240" height="240">
+      <p class="label">logo.svg - Light background</p>
+    </div>
+    <div class="card-dark card">
+      <img src="logo.svg" alt="Primary Logo" width="240" height="240">
+      <p class="label">logo.svg - Dark background</p>
+    </div>
+  </div>
+
+  <h2>Simple Logo (Alternative)</h2>
+  <div class="grid">
+    <div class="card">
+      <img src="logo-simple.svg" alt="Simple Logo" width="240" height="240">
+      <p class="label">logo-simple.svg - Rounded square variant</p>
+    </div>
+    <div class="card-dark card">
+      <img src="logo-simple.svg" alt="Simple Logo" width="240" height="240">
+      <p class="label">logo-simple.svg - Dark background</p>
+    </div>
+  </div>
+
+  <h2>Wordmark (Header / Social)</h2>
+  <div class="grid">
+    <div class="card">
+      <img src="logo-wordmark.svg" alt="Wordmark" width="400" height="100">
+      <p class="label">logo-wordmark.svg - 400x100</p>
+    </div>
+  </div>
+
+  <h2>Favicon</h2>
+  <div class="card" style="max-width: 300px;">
+    <div class="sizes">
+      <div class="size-item">
+        <img src="favicon.svg" alt="Favicon" width="32" height="32">
+        <p class="label">32px</p>
+      </div>
+      <div class="size-item">
+        <img src="favicon.svg" alt="Favicon" width="64" height="64">
+        <p class="label">64px</p>
+      </div>
+      <div class="size-item">
+        <img src="favicon.svg" alt="Favicon" width="128" height="128">
+        <p class="label">128px</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Usage Notes</h2>
+  <div class="card" style="max-width: 600px;">
+    <ul style="color: #4b5563; line-height: 1.8; padding-left: 20px;">
+      <li><strong>Product Hunt Thumbnail:</strong> Use logo.svg or logo-simple.svg at 240x240</li>
+      <li><strong>Gallery Header:</strong> Use logo-wordmark.svg</li>
+      <li><strong>Favicon:</strong> Use favicon.svg</li>
+      <li><strong>Convert to PNG:</strong> Open SVG in browser, screenshot, or use Figma/Canva</li>
+    </ul>
+  </div>
+</body>
+</html>
