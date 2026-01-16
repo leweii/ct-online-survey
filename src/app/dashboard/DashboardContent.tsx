@@ -10,6 +10,9 @@ const CREATOR_NAME_KEY = "survey_creator_name";
 
 interface SurveyWithCount extends Survey {
   responseCount: number;
+  completedCount: number;
+  partialCount: number;
+  inProgressCount: number;
 }
 
 export function DashboardContent() {
@@ -53,10 +56,22 @@ export function DashboardContent() {
         data.map(async (survey) => {
           try {
             const resRes = await fetch(`/api/surveys/${survey.id}/responses`);
-            const responses = resRes.ok ? await resRes.json() : [];
-            return { ...survey, responseCount: responses.length };
+            const responses: Array<{ status: string }> = resRes.ok ? await resRes.json() : [];
+
+            // 按状态分组计数
+            const completedCount = responses.filter((r) => r.status === 'completed').length;
+            const partialCount = responses.filter((r) => r.status === 'partial').length;
+            const inProgressCount = responses.filter((r) => r.status === 'in_progress').length;
+
+            return {
+              ...survey,
+              responseCount: responses.length,
+              completedCount,
+              partialCount,
+              inProgressCount,
+            };
           } catch {
-            return { ...survey, responseCount: 0 };
+            return { ...survey, responseCount: 0, completedCount: 0, partialCount: 0, inProgressCount: 0 };
           }
         })
       );
@@ -207,6 +222,9 @@ export function DashboardContent() {
                 key={survey.id}
                 survey={survey}
                 responseCount={survey.responseCount}
+                completedCount={survey.completedCount}
+                partialCount={survey.partialCount}
+                inProgressCount={survey.inProgressCount}
                 onExport={() => handleExport(survey.id)}
                 onStatusChange={(status) => handleStatusChange(survey.id, status)}
                 onAnalyze={() => router.push(`/dashboard/chat?code=${encodeURIComponent(creatorCode)}&survey=${survey.id}`)}

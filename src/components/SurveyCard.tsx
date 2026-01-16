@@ -6,6 +6,9 @@ import type { Survey } from "@/types/database";
 interface SurveyCardProps {
   survey: Survey;
   responseCount?: number;
+  completedCount?: number;
+  partialCount?: number;
+  inProgressCount?: number;
   onExport?: () => void;
   onStatusChange?: (status: "draft" | "active" | "closed") => void;
   onAnalyze?: () => void;
@@ -14,6 +17,9 @@ interface SurveyCardProps {
 export function SurveyCard({
   survey,
   responseCount = 0,
+  completedCount = 0,
+  partialCount = 0,
+  inProgressCount = 0,
   onExport,
   onStatusChange,
   onAnalyze,
@@ -55,7 +61,11 @@ export function SurveyCard({
 
       <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
         <span>{survey.questions.length} {t.questions}</span>
-        <span>{responseCount} {t.responses}</span>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-green-600" title="Completed">🟢 {completedCount}</span>
+          <span className="text-yellow-600" title="Partial">🟡 {partialCount}</span>
+          <span className="text-gray-400" title="In Progress">⚪ {inProgressCount}</span>
+        </div>
       </div>
 
       <div className="flex gap-2 flex-wrap">
