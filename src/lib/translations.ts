@@ -388,7 +388,7 @@ export const translations = {
       aiLabel: "AI",
       designerLabel: "问卷设计师",
       assistantLabel: "助手",
-      analystLabel: "分析师",
+      analystLabel: "问卷分析师",
       youLabel: "你",
     },
 
