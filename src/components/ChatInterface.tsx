@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, FormEvent } from "react";
+import { useState, useRef, useEffect, FormEvent, KeyboardEvent } from "react";
 import { MessageBubble } from "./MessageBubble";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -32,11 +32,20 @@ export function ChatInterface({
   const { t } = useLanguage();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingContent]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = Math.min(textarea.scrollHeight, 150) + "px";
+    }
+  }, [input]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -44,6 +53,18 @@ export function ChatInterface({
       onSendMessage(input.trim());
       setInput("");
     }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter without Shift sends the message
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (input.trim() && !isLoading) {
+        onSendMessage(input.trim());
+        setInput("");
+      }
+    }
+    // Shift+Enter allows default behavior (new line)
   };
 
   return (
@@ -90,19 +111,20 @@ export function ChatInterface({
       {/* Input area */}
       {!hideInput && (
         <form onSubmit={handleSubmit} className="border-t p-4 bg-white">
-          <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              type="text"
+          <div className="flex gap-2 items-end">
+            <textarea
+              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder={placeholder || t.question.typeAnswer}
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              rows={1}
+              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none overflow-hidden"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm shrink-0"
             >
               {isLoading ? (
                 <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
