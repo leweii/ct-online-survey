@@ -1,50 +1,101 @@
 # ChatSurvey
 
-A conversational survey platform that lets you create, take, and analyze surveys through AI-powered chat interfaces.
+**Intelligent Survey Design & Analytics Platform**
+
+Create professional surveys through AI conversation, collect responses via shareable links, and get AI-driven insights from your data.
+
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://ct-online-survey.vercel.app/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
+
+[**Try Live Demo**](https://ct-online-survey.vercel.app/) | [Report Bug](https://github.com/leweii/ct-online-survey/issues)
+
+---
 
 ## Features
 
-- **AI Survey Designer** - Describe your survey topic and the AI generates a complete questionnaire with 21-28 professional questions
-- **Conversational Response Collection** - Respondents answer questions one at a time through a friendly chat interface
-- **Form Mode Option** - Traditional form view for respondents who prefer filling everything at once
-- **Analytics Dashboard** - AI-powered analysis of survey responses with natural language queries
-- **CSV Export** - Export response data for external analysis
-- **Bilingual Support** - Full English and Chinese (中文) localization
-- **No Account Required** - Creator name-based identification system
+### AI-Powered Survey Creation
+Describe your survey requirements in natural language. The AI assistant generates a complete professional questionnaire with 21-28 questions, appropriate question types, and logical flow.
 
-## Question Types
+**11 Question Types Supported:**
+| Type | Description |
+|------|-------------|
+| Text | Open-ended free-form responses |
+| Single Choice | Radio button selection |
+| Multiple Choice | Checkbox multi-select |
+| Dropdown | Select menu options |
+| Rating Scale | 1-5 or 1-10 ratings |
+| Slider | Numeric range selection |
+| Yes/No | Binary choice |
+| Date | Date picker |
+| Number | Numeric input |
+| Email | Email validation |
+| Phone | Phone number input |
 
-- Text (free-form)
-- Multiple Choice (single select)
-- Multi-Select (multiple answers)
-- Dropdown
-- Rating Scale
-- Slider
-- Yes/No
-- Date
-- Number
-- Email
-- Phone
+### Easy Survey Distribution
+- **Short codes** (e.g., `A7B2`) - Easy to share verbally or in print
+- **Direct links** - One-click access to surveys
+- **Mobile-friendly** - Responsive design for all devices
 
-## Tech Stack
+### Management Dashboard
+- View all surveys with response statistics
+- Survey lifecycle management (Draft → Active → Closed)
+- One-click link copying
+- CSV data export
 
-- **Framework**: Next.js 14 (App Router)
-- **AI**: Google Gemini via Vercel AI SDK
-- **Database**: Supabase (PostgreSQL)
-- **Styling**: Tailwind CSS
-- **Language**: TypeScript
+### AI Analytics Assistant
+Chat with an AI analyst to understand your data:
+- "What's the completion rate?"
+- "Show me the rating distribution for question 3"
+- "How do answers to Q1 relate to Q2?"
+- "What patterns do you see in the responses?"
 
-## Getting Started
+### Bilingual Interface
+Full English and Chinese (中文) support with automatic browser language detection.
+
+---
+
+## Quick Start
+
+### Create a Survey
+
+1. Visit [ct-online-survey.vercel.app](https://ct-online-survey.vercel.app/)
+2. Enter your **Administrator Name** (used to manage your surveys)
+3. Click **Create Survey**
+4. Describe your needs:
+   - *"Employee satisfaction survey for a tech company"*
+   - *"Customer feedback form for restaurant"*
+   - *"360-degree performance review"*
+5. Review and edit the generated questions
+6. Click **Save & Publish** to get your survey code
+
+### Take a Survey
+
+1. Visit the homepage and select **Take Survey**
+2. Enter the survey code (e.g., `A7B2`) or paste the link
+3. Complete the survey in form mode
+4. Submit your responses
+
+### Analyze Results
+
+1. Visit the homepage with your Administrator Name
+2. Click **Management Center**
+3. Click **Analyze** on any survey
+4. Ask questions about your data in natural language
+
+---
+
+## Self-Hosting
 
 ### Prerequisites
 
 - Node.js 18+
-- A Supabase project
+- Supabase account (free tier works)
 - Google AI API key (Gemini)
 
 ### Environment Variables
 
-Create a `.env.local` file:
+Create `.env.local`:
 
 ```bash
 GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
@@ -54,79 +105,82 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ### Database Setup
 
-Run the schema in your Supabase SQL editor:
-
-```bash
-# Located at supabase/schema.sql
-```
+Import `supabase/schema.sql` to your Supabase project.
 
 ### Installation
 
 ```bash
+git clone https://github.com/leweii/ct-online-survey.git
+cd ct-online-survey
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000)
 
-## Usage
+### Commands
 
-### Creating a Survey
+```bash
+npm run dev      # Development server
+npm run build    # Production build
+npm run start    # Production server
+npm run lint     # ESLint
+npm run test     # Run tests
+```
 
-1. Go to the home page and enter a creator name
-2. Click "Start Creating"
-3. Describe your survey topic to the AI (e.g., "Customer satisfaction survey for a coffee shop")
-4. Review the generated questions
-5. The AI will provide a survey code and link when ready
+---
 
-### Taking a Survey
+## Tech Stack
 
-1. Enter the survey code or paste the survey link
-2. Choose between Chat Mode (conversational) or Form Mode (traditional)
-3. Answer the questions
-4. Submit when complete
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| AI | Google Gemini + Vercel AI SDK |
+| Database | Supabase (PostgreSQL) |
+| Styling | Tailwind CSS |
+| Security | Cloudflare Turnstile |
+| Deployment | Vercel |
 
-### Viewing Results
+---
 
-1. Go to the home page with your creator name
-2. Click "View Dashboard"
-3. See all your surveys with response counts
-4. Export data as CSV or use the AI analytics assistant
-
-## Project Structure
+## Architecture
 
 ```
 src/
 ├── app/
 │   ├── api/
-│   │   ├── chat/          # AI chat endpoints (creator, responder, analytics)
-│   │   ├── surveys/       # Survey CRUD + export
-│   │   └── responses/     # Response CRUD
-│   ├── create/            # Survey creation page
-│   ├── survey/[id]/       # Survey response page
-│   └── dashboard/         # Creator dashboard + analytics
-├── components/            # React components
-├── contexts/              # React contexts (language)
-├── lib/                   # Utilities (AI, Supabase, CSV)
-└── types/                 # TypeScript definitions
+│   │   ├── chat/           # AI endpoints (creator, responder, analytics)
+│   │   ├── surveys/        # Survey CRUD + export
+│   │   └── responses/      # Response handling
+│   ├── create/             # Survey creation page
+│   ├── dashboard/          # Management + analytics
+│   └── survey/[id]/        # Survey response page
+├── components/             # React components
+├── contexts/               # Language context
+├── lib/
+│   ├── ai.ts              # AI configuration
+│   ├── analytics-tools.ts # AI analytics tools
+│   ├── supabase.ts        # Database client
+│   └── translations.ts    # i18n
+└── types/                  # TypeScript definitions
 ```
 
-## Commands
+### AI Patterns
 
-```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run start    # Start production server
-npm run lint     # Run ESLint
-```
+**Survey Creation:** Uses `<ACTION>` tags in AI responses to trigger state changes.
 
-## Architecture Notes
+**Analytics:** Tool-calling pattern where the AI agent queries the database directly via typed tools (`getSurveyOverview`, `getQuestionStats`, `getFilteredResponses`, `crossTabulate`).
 
-- AI responses use `<ACTION>{...}</ACTION>` tags to trigger state changes (e.g., creating surveys, saving answers)
-- The `parseActions()` function in `lib/ai.ts` extracts these action tags after streaming completes
-- Survey ownership uses `creator_name` - no authentication system
-- Responses track `current_question_index` to support resuming incomplete surveys
+---
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## Contact
+
+- **Email:** lewei.me@gmail.com
+- **GitHub:** [@leweii](https://github.com/leweii)
