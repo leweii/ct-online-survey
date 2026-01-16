@@ -32,7 +32,7 @@ export const translations = {
     create: {
       title: "Create Survey",
       welcomeMessage:
-        "Hello! I'm your **Survey Design Assistant**.\n\nJust tell me your survey topic, and I'll create a professional questionnaire for you.\n\n**Example:** \"Restaurant customer satisfaction survey\"\n\n**What you'll get:**\n- 21-28 carefully designed questions\n- Multiple question types (rating, multiple choice, text, etc.)\n- Logical question flow\n\n**You can:**\n- ✏️ Edit questions directly in the preview panel\n- 🗑️ Delete unnecessary questions\n- ➕ Add custom questions\n- 🔄 Drag to reorder\n\nReady? Describe your survey topic!",
+        "Hello! I'm your **Survey Design Assistant**.\n\nJust tell me your survey topic, and I'll create a professional questionnaire for you.\n\n**Popular Examples:**\n- 📊 Employee Satisfaction Survey\n- 🎯 360-Degree Performance Review\n- 🏢 Company Culture Assessment\n- 👥 Team Collaboration Evaluation\n- 💼 New Hire Onboarding Feedback\n- 🚀 Training Effectiveness Survey\n\n**What you'll get:**\n- 21-28 carefully designed questions\n- Multiple question types (rating, multiple choice, text, etc.)\n- Logical question flow\n\n**You can:**\n- ✏️ Edit questions directly in the preview panel\n- 🗑️ Delete unnecessary questions\n- ➕ Add custom questions\n- 🔄 Drag to reorder\n\nReady? Describe your survey topic!",
       questionsCount: "questions",
       surveyCreated:
         "Survey created successfully! Here are the details:\n\n**Survey Code:** {shortCode}\n\n**Survey Link:** {surveyUrl}\n\n**Creator Name:** {creatorName}\n\nPlease save your creator name to access your dashboard and response data later.",
@@ -238,7 +238,7 @@ export const translations = {
     create: {
       title: "创建问卷",
       welcomeMessage:
-        "您好！我是您的**问卷设计助手**。\n\n只需告诉我您的问卷主题，我将为您创建一份专业问卷。\n\n**示例：** \"餐厅顾客满意度调查\"\n\n**您将获得：**\n- 21-28 个精心设计的问题\n- 多种题型（评分、单选、多选、文本等）\n- 合理的问题逻辑\n\n**您可以：**\n- ✏️ 在右侧预览面板直接编辑问题\n- 🗑️ 删除不需要的问题\n- ➕ 添加自定义问题\n- 🔄 拖拽调整顺序\n\n准备好了吗？请描述您的问卷主题！",
+        "您好！我是您的**问卷设计助手**。\n\n只需告诉我您的问卷主题，我将为您创建一份专业问卷。\n\n**热门示例：**\n- 📊 员工满意度调查\n- 🎯 绩效考核360度评估\n- 🏢 企业文化认同度调研\n- 👥 团队协作效率评估\n- 💼 新员工入职体验反馈\n- 🚀 培训效果评估\n\n**您将获得：**\n- 21-28 个精心设计的问题\n- 多种题型（评分、单选、多选、文本等）\n- 合理的问题逻辑\n\n**您可以：**\n- ✏️ 在右侧预览面板直接编辑问题\n- 🗑️ 删除不需要的问题\n- ➕ 添加自定义问题\n- 🔄 拖拽调整顺序\n\n准备好了吗？请描述您的问卷主题！",
       questionsCount: "个问题",
       surveyCreated:
         "问卷已创建成功！以下是详细信息：\n\n**问卷代码：** {shortCode}\n\n**问卷链接：** {surveyUrl}\n\n**创建者名称：** {creatorName}\n\n请妥善保存创建者名称，以便后续查看仪表盘和回复数据。",
