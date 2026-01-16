@@ -9,9 +9,11 @@ import {
 const db = supabase as any;
 
 // GET /api/surveys?creator_code=xxx OR ?creator_name=xxx - List surveys by creator
+// Optional: ?include=counts to include response counts (avoids N+1 queries)
 export async function GET(request: NextRequest) {
   const creatorCode = request.nextUrl.searchParams.get("creator_code");
   const creatorName = request.nextUrl.searchParams.get("creator_name");
+  const includeCounts = request.nextUrl.searchParams.get("include") === "counts";
 
   if (!creatorCode && !creatorName) {
     return NextResponse.json(
@@ -20,23 +22,54 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  let query = db.from("surveys").select("*");
+  // For listing, only fetch needed fields (exclude full questions array)
+  const listFields = "id, short_code, creator_code, creator_name, title, description, status, created_at, updated_at";
+  let query = db.from("surveys").select(listFields);
 
   if (creatorName) {
-    // Primary: lookup by creator_name
     query = query.eq("creator_name", creatorName);
   } else if (creatorCode) {
-    // Backward compatibility: lookup by creator_code or creator_name
     query = query.or(`creator_code.eq.${creatorCode},creator_name.eq.${creatorCode}`);
   }
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  const { data: surveys, error } = await query.order("created_at", { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  // If counts requested, fetch response counts in a single query
+  if (includeCounts && surveys && surveys.length > 0) {
+    const surveyIds = surveys.map((s: any) => s.id);
+
+    // Fetch all responses for these surveys (only status field)
+    const { data: responses } = await db
+      .from("responses")
+      .select("survey_id, status")
+      .in("survey_id", surveyIds);
+
+    // Aggregate counts by survey
+    const countsBySurvey: Record<string, { total: number; completed: number; partial: number; inProgress: number }> = {};
+    (responses || []).forEach((r: any) => {
+      if (!countsBySurvey[r.survey_id]) {
+        countsBySurvey[r.survey_id] = { total: 0, completed: 0, partial: 0, inProgress: 0 };
+      }
+      countsBySurvey[r.survey_id].total++;
+      if (r.status === "completed") countsBySurvey[r.survey_id].completed++;
+      else if (r.status === "partial") countsBySurvey[r.survey_id].partial++;
+      else if (r.status === "in_progress") countsBySurvey[r.survey_id].inProgress++;
+    });
+
+    // Attach counts to surveys
+    const surveysWithCounts = surveys.map((s: any) => ({
+      ...s,
+      responseCounts: countsBySurvey[s.id] || { total: 0, completed: 0, partial: 0, inProgress: 0 },
+    }));
+
+    return NextResponse.json(surveysWithCounts);
+  }
+
+  return NextResponse.json(surveys);
 }
 
 // POST /api/surveys - Create a new survey

@@ -47,37 +47,20 @@ export function DashboardContent() {
     setError(null);
 
     try {
-      const res = await fetch(`/api/surveys?creator_code=${encodeURIComponent(code)}`);
+      // Use optimized endpoint with counts included (single request instead of N+1)
+      const res = await fetch(`/api/surveys?creator_code=${encodeURIComponent(code)}&include=counts`);
       if (!res.ok) throw new Error("Failed to fetch surveys");
 
-      const data: Survey[] = await res.json();
+      const data = await res.json();
 
-      // Fetch response counts for each survey
-      const surveysWithCounts = await Promise.all(
-        data.map(async (survey) => {
-          const defaultCounts = { responseCount: 0, completedCount: 0, partialCount: 0, inProgressCount: 0 };
-          try {
-            const resRes = await fetch(`/api/surveys/${survey.id}/responses`);
-            if (!resRes.ok) return { ...survey, ...defaultCounts };
-
-            const responses: Array<{ status: string }> = await resRes.json();
-            const counts = responses.reduce(
-              (acc, r) => {
-                acc.responseCount++;
-                if (r.status === "completed") acc.completedCount++;
-                else if (r.status === "partial") acc.partialCount++;
-                else if (r.status === "in_progress") acc.inProgressCount++;
-                return acc;
-              },
-              { responseCount: 0, completedCount: 0, partialCount: 0, inProgressCount: 0 }
-            );
-
-            return { ...survey, ...counts };
-          } catch {
-            return { ...survey, ...defaultCounts };
-          }
-        })
-      );
+      // Map response counts to expected format
+      const surveysWithCounts = data.map((survey: any) => ({
+        ...survey,
+        responseCount: survey.responseCounts?.total ?? 0,
+        completedCount: survey.responseCounts?.completed ?? 0,
+        partialCount: survey.responseCounts?.partial ?? 0,
+        inProgressCount: survey.responseCounts?.inProgress ?? 0,
+      }));
 
       setSurveys(surveysWithCounts);
     } catch {

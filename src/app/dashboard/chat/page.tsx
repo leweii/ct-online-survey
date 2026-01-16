@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MessageBubble } from "@/components/MessageBubble";
-import type { Survey, Response as SurveyResponse } from "@/types/database";
 
 interface Message {
   id: string;
@@ -12,12 +11,16 @@ interface Message {
   content: string;
 }
 
-interface Stats {
-  totalResponses: number;
-  completedResponses: number;
-  partialResponses: number;
-  completionRate: number;
-  todayResponses: number;
+interface SurveyWithCounts {
+  id: string;
+  title: string;
+  status: string;
+  responseCounts?: {
+    total: number;
+    completed: number;
+    partial: number;
+    inProgress: number;
+  };
 }
 
 function AnalyticsChatContent() {
@@ -27,8 +30,7 @@ function AnalyticsChatContent() {
   const creatorCode = searchParams.get("code") || "";
   const initialSurveyId = searchParams.get("survey") || "";
 
-  const [surveys, setSurveys] = useState<Survey[]>([]);
-  const [allResponses, setAllResponses] = useState<SurveyResponse[]>([]);
+  const [surveys, setSurveys] = useState<SurveyWithCounts[]>([]);
   const [selectedSurveyId, setSelectedSurveyId] = useState<string>(initialSurveyId);
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -39,42 +41,20 @@ function AnalyticsChatContent() {
   // Track which surveys have been initialized to avoid re-fetching
   const initializedSurveys = useRef<Set<string>>(new Set());
 
-  // Get selected survey and its responses
-  const selectedSurvey = useMemo(() => {
-    return surveys.find(s => s.id === selectedSurveyId) || null;
-  }, [surveys, selectedSurveyId]);
+  // Get selected survey
+  const selectedSurvey = surveys.find(s => s.id === selectedSurveyId) || null;
 
-  const filteredResponses = useMemo(() => {
-    if (!selectedSurveyId) return [];
-    return allResponses.filter(r => r.survey_id === selectedSurveyId);
-  }, [allResponses, selectedSurveyId]);
+  // Get stats from survey counts (no separate response fetching needed)
+  const stats = selectedSurvey?.responseCounts ? {
+    totalResponses: selectedSurvey.responseCounts.total,
+    completedResponses: selectedSurvey.responseCounts.completed,
+    partialResponses: selectedSurvey.responseCounts.partial,
+    completionRate: selectedSurvey.responseCounts.total > 0
+      ? Math.round((selectedSurvey.responseCounts.completed / selectedSurvey.responseCounts.total) * 100)
+      : 0,
+  } : null;
 
-  // Calculate stats for selected survey
-  const stats = useMemo<Stats | null>(() => {
-    if (!selectedSurveyId) return null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayResponses = filteredResponses.filter(r => {
-      const responseDate = new Date(r.started_at);
-      return responseDate >= today;
-    }).length;
-
-    const completedResponses = filteredResponses.filter(r => r.status === "completed").length;
-    const partialResponses = filteredResponses.filter(r => r.status === "partial").length;
-
-    return {
-      totalResponses: filteredResponses.length,
-      completedResponses,
-      partialResponses,
-      completionRate: filteredResponses.length > 0
-        ? Math.round((completedResponses / filteredResponses.length) * 100)
-        : 0,
-      todayResponses,
-    };
-  }, [filteredResponses, selectedSurveyId]);
-
-  // Fetch data on mount
+  // Fetch surveys with counts on mount (single optimized request)
   useEffect(() => {
     async function fetchData() {
       if (!creatorCode) {
@@ -83,31 +63,16 @@ function AnalyticsChatContent() {
       }
 
       try {
-        // Fetch surveys
-        const surveysRes = await fetch(`/api/surveys?creator_code=${encodeURIComponent(creatorCode)}`);
-        if (!surveysRes.ok) throw new Error("Failed to fetch surveys");
-        const surveysData: Survey[] = await surveysRes.json();
-        setSurveys(surveysData);
+        // Use optimized endpoint with counts - no N+1 queries
+        const res = await fetch(`/api/surveys?creator_code=${encodeURIComponent(creatorCode)}&include=counts`);
+        if (!res.ok) throw new Error("Failed to fetch surveys");
+        const data = await res.json();
+        setSurveys(data);
 
         // Auto-select first survey if none selected
-        if (!initialSurveyId && surveysData.length > 0) {
-          setSelectedSurveyId(surveysData[0].id);
+        if (!initialSurveyId && data.length > 0) {
+          setSelectedSurveyId(data[0].id);
         }
-
-        // Fetch responses for each survey
-        const responses: SurveyResponse[] = [];
-        for (const survey of surveysData) {
-          try {
-            const resRes = await fetch(`/api/surveys/${survey.id}/responses`);
-            if (resRes.ok) {
-              const responsesData = await resRes.json();
-              responses.push(...responsesData);
-            }
-          } catch {
-            // Continue with other surveys
-          }
-        }
-        setAllResponses(responses);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -315,7 +280,7 @@ function AnalyticsChatContent() {
                 <div className="text-sm text-gray-500">{t.analytics.completionRate}</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-blue-600">{stats.todayResponses}</div>
+                <div className="text-2xl font-bold text-blue-600">{stats.partialResponses}</div>
                 <div className="text-sm text-gray-500">{t.analytics.todayNew}</div>
               </div>
             </div>
