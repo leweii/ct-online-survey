@@ -212,7 +212,7 @@ export async function POST(request: Request) {
           for await (const chunk of result.textStream) {
             fullResponse += chunk;
             // Buffer the chunk and get safe text to emit
-            const safeText = actionBuffer.push(chunk);
+            const { text: safeText } = actionBuffer.push(chunk);
             if (safeText) {
               controller.enqueue(
                 encoder.encode(`data: ${JSON.stringify({ text: safeText })}\n\n`)
@@ -221,7 +221,7 @@ export async function POST(request: Request) {
           }
 
           // Flush any remaining buffered content
-          const remaining = actionBuffer.flush();
+          const { text: remaining } = actionBuffer.flush();
           if (remaining) {
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ text: remaining })}\n\n`)
