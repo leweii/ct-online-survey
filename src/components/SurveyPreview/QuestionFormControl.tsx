@@ -4,8 +4,23 @@ import { QuestionType } from "@/types/database";
 
 interface QuestionFormControlProps {
   type: QuestionType;
-  options?: string[];
+  options?: unknown[];
   disabled?: boolean;
+}
+
+// Helper to safely get display text from option (handles both string and object formats)
+function getOptionText(option: unknown): string {
+  if (typeof option === "string") {
+    return option;
+  }
+  if (option && typeof option === "object") {
+    const obj = option as Record<string, unknown>;
+    if (typeof obj.label === "string") return obj.label;
+    if (typeof obj.text === "string") return obj.text;
+    if (typeof obj.value === "string") return obj.value;
+    if (typeof obj.name === "string") return obj.name;
+  }
+  return String(option);
 }
 
 export function QuestionFormControl({
@@ -30,7 +45,7 @@ export function QuestionFormControl({
           {options.map((option, i) => (
             <label key={i} className="flex items-center gap-2 text-sm text-gray-600">
               <input type="radio" disabled={disabled} className="w-4 h-4" />
-              <span>{option}</span>
+              <span>{getOptionText(option)}</span>
             </label>
           ))}
         </div>
@@ -42,7 +57,7 @@ export function QuestionFormControl({
           {options.map((option, i) => (
             <label key={i} className="flex items-center gap-2 text-sm text-gray-600">
               <input type="checkbox" disabled={disabled} className="w-4 h-4" />
-              <span>{option}</span>
+              <span>{getOptionText(option)}</span>
             </label>
           ))}
         </div>
@@ -56,7 +71,7 @@ export function QuestionFormControl({
         >
           <option>Select an option...</option>
           {options.map((option, i) => (
-            <option key={i}>{option}</option>
+            <option key={i}>{getOptionText(option)}</option>
           ))}
         </select>
       );

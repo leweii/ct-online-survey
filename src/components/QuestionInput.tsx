@@ -13,6 +13,36 @@ interface QuestionInputProps {
   inline?: boolean; // For chat mode styling
 }
 
+// Helper to safely get display text from option (handles both string and object formats)
+function getOptionText(option: unknown): string {
+  if (typeof option === "string") {
+    return option;
+  }
+  if (option && typeof option === "object") {
+    // Handle common object formats like {label: "..."}, {text: "..."}, {value: "..."}
+    const obj = option as Record<string, unknown>;
+    if (typeof obj.label === "string") return obj.label;
+    if (typeof obj.text === "string") return obj.text;
+    if (typeof obj.value === "string") return obj.value;
+    if (typeof obj.name === "string") return obj.name;
+  }
+  return String(option);
+}
+
+// Helper to get option value for comparison
+function getOptionValue(option: unknown): string {
+  if (typeof option === "string") {
+    return option;
+  }
+  if (option && typeof option === "object") {
+    const obj = option as Record<string, unknown>;
+    if (typeof obj.value === "string") return obj.value;
+    if (typeof obj.label === "string") return obj.label;
+    if (typeof obj.text === "string") return obj.text;
+  }
+  return String(option);
+}
+
 export function QuestionInput({
   question,
   value,
@@ -51,30 +81,34 @@ export function QuestionInput({
     case "multiple_choice":
       return (
         <div className={`space-y-2 ${inline ? "mt-2" : ""}`}>
-          {question.options?.map((option, index) => (
-            <label
-              key={index}
-              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                value === option
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-gray-300"
-              } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <input
-                type="radio"
-                name={`question-${question.id}`}
-                value={option}
-                checked={value === option}
-                onChange={() => {
-                  onChange(option);
-                  if (onSubmit) setTimeout(onSubmit, 100);
-                }}
-                disabled={disabled}
-                className="w-4 h-4 text-blue-600"
-              />
-              <span className={inline ? "text-sm" : ""}>{option}</span>
-            </label>
-          ))}
+          {question.options?.map((option, index) => {
+            const optionText = getOptionText(option);
+            const optionValue = getOptionValue(option);
+            return (
+              <label
+                key={index}
+                className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  value === optionValue
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
+                } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name={`question-${question.id}`}
+                  value={optionValue}
+                  checked={value === optionValue}
+                  onChange={() => {
+                    onChange(optionValue);
+                    if (onSubmit) setTimeout(onSubmit, 100);
+                  }}
+                  disabled={disabled}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className={inline ? "text-sm" : ""}>{optionText}</span>
+              </label>
+            );
+          })}
         </div>
       );
 
@@ -83,7 +117,9 @@ export function QuestionInput({
       return (
         <div className={`space-y-2 ${inline ? "mt-2" : ""}`}>
           {question.options?.map((option, index) => {
-            const isSelected = selectedValues.includes(option);
+            const optionText = getOptionText(option);
+            const optionValue = getOptionValue(option);
+            const isSelected = selectedValues.includes(optionValue);
             return (
               <label
                 key={index}
@@ -95,18 +131,18 @@ export function QuestionInput({
               >
                 <input
                   type="checkbox"
-                  value={option}
+                  value={optionValue}
                   checked={isSelected}
                   onChange={() => {
                     const newValues = isSelected
-                      ? selectedValues.filter((v) => v !== option)
-                      : [...selectedValues, option];
+                      ? selectedValues.filter((v) => v !== optionValue)
+                      : [...selectedValues, optionValue];
                     onChange(newValues);
                   }}
                   disabled={disabled}
                   className="w-4 h-4 text-blue-600 rounded"
                 />
-                <span className={inline ? "text-sm" : ""}>{option}</span>
+                <span className={inline ? "text-sm" : ""}>{optionText}</span>
               </label>
             );
           })}
@@ -136,11 +172,15 @@ export function QuestionInput({
           className={baseInputClass}
         >
           <option value="">{t.question.selectOption}</option>
-          {question.options?.map((option, index) => (
-            <option key={index} value={option}>
-              {option}
-            </option>
-          ))}
+          {question.options?.map((option, index) => {
+            const optionText = getOptionText(option);
+            const optionValue = getOptionValue(option);
+            return (
+              <option key={index} value={optionValue}>
+                {optionText}
+              </option>
+            );
+          })}
         </select>
       );
 

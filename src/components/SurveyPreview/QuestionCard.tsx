@@ -5,6 +5,27 @@ import { Question } from "@/types/database";
 import { QuestionFormControl } from "./QuestionFormControl";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// Helper to safely get display text from option (handles both string and object formats)
+function getOptionText(option: unknown): string {
+  if (typeof option === "string") {
+    return option;
+  }
+  if (option && typeof option === "object") {
+    const obj = option as Record<string, unknown>;
+    if (typeof obj.label === "string") return obj.label;
+    if (typeof obj.text === "string") return obj.text;
+    if (typeof obj.value === "string") return obj.value;
+    if (typeof obj.name === "string") return obj.name;
+  }
+  return String(option);
+}
+
+// Convert options array to string array (normalizing object options)
+function normalizeOptions(options: unknown[] | undefined): string[] {
+  if (!options) return [];
+  return options.map(getOptionText);
+}
+
 interface QuestionCardProps {
   question: Question;
   index: number;
@@ -34,7 +55,7 @@ export function QuestionCard({
   const [isEditingText, setIsEditingText] = useState(false);
   const [editedText, setEditedText] = useState(question.text);
   const [isEditingOptions, setIsEditingOptions] = useState(false);
-  const [editedOptions, setEditedOptions] = useState(question.options || []);
+  const [editedOptions, setEditedOptions] = useState(() => normalizeOptions(question.options));
   const textInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -46,7 +67,7 @@ export function QuestionCard({
 
   useEffect(() => {
     setEditedText(question.text);
-    setEditedOptions(question.options || []);
+    setEditedOptions(normalizeOptions(question.options));
   }, [question.text, question.options]);
 
   const handleTextSave = () => {
