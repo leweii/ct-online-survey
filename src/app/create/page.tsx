@@ -216,7 +216,7 @@ function CreateSurveyContent() {
 
   return (
     <div className="h-screen flex flex-col">
-      <header className="border-b bg-white px-4 py-3 flex items-center justify-between shrink-0">
+      <header className="sticky top-0 z-10 border-b bg-white px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push("/")} className="text-gray-600 hover:text-gray-800">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
