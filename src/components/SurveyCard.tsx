@@ -39,13 +39,19 @@ export function SurveyCard({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start mb-3">
-        <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
-          {survey.title}
-        </h3>
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+      {/* Header: Title + Status */}
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1 min-w-0 pr-3">
+          <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
+            {survey.title}
+          </h3>
+          <p className="text-sm text-gray-500 mt-1 font-mono">
+            ID: {survey.short_code}
+          </p>
+        </div>
         <span
-          className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 ${
             statusColors[survey.status]
           }`}
         >
@@ -53,26 +59,42 @@ export function SurveyCard({
         </span>
       </div>
 
+      {/* Description */}
       {survey.description && (
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+        <p className="text-gray-600 text-sm mb-5 line-clamp-2">
           {survey.description}
         </p>
       )}
 
-      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-        <span>{survey.questions.length} {t.questions}</span>
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-green-600" title="Completed">🟢 {completedCount}</span>
-          <span className="text-yellow-600" title="Partial">🟡 {partialCount}</span>
-          <span className="text-gray-400" title="In Progress">⚪ {inProgressCount}</span>
+      {/* Stats Row */}
+      <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg mb-5">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-gray-900">{survey.questions.length}</div>
+          <div className="text-xs text-gray-500">{t.questions}</div>
+        </div>
+        <div className="h-8 w-px bg-gray-200" />
+        <div className="text-center">
+          <div className="text-2xl font-bold text-green-600">{completedCount}</div>
+          <div className="text-xs text-gray-500">已完成</div>
+        </div>
+        <div className="h-8 w-px bg-gray-200" />
+        <div className="text-center">
+          <div className="text-2xl font-bold text-yellow-600">{partialCount}</div>
+          <div className="text-xs text-gray-500">部分</div>
+        </div>
+        <div className="h-8 w-px bg-gray-200" />
+        <div className="text-center">
+          <div className="text-2xl font-bold text-gray-400">{inProgressCount}</div>
+          <div className="text-xs text-gray-500">进行中</div>
         </div>
       </div>
 
+      {/* Action Buttons */}
       <div className="flex gap-2 flex-wrap">
         {onStatusChange && survey.status === "draft" && (
           <button
             onClick={() => onStatusChange("active")}
-            className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
+            className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
           >
             {t.card.activate}
           </button>
@@ -80,7 +102,7 @@ export function SurveyCard({
         {onStatusChange && survey.status === "active" && (
           <button
             onClick={() => onStatusChange("closed")}
-            className="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
           >
             {t.card.close}
           </button>
@@ -88,7 +110,7 @@ export function SurveyCard({
         {onAnalyze && responseCount > 0 && (
           <button
             onClick={onAnalyze}
-            className="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 transition-colors"
+            className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
           >
             {t.card.analyze}
           </button>
@@ -96,17 +118,17 @@ export function SurveyCard({
         {onExport && responseCount > 0 && (
           <button
             onClick={onExport}
-            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
           >
             {t.card.exportCSV}
           </button>
         )}
         <button
           onClick={() => {
-            const url = `${window.location.origin}/survey/${survey.id}`;
+            const url = `${window.location.origin}/survey/${survey.short_code}`;
             navigator.clipboard.writeText(url);
           }}
-          className="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition-colors"
+          className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors"
         >
           {t.card.copyLink}
         </button>
