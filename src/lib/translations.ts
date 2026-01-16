@@ -32,7 +32,7 @@ export const translations = {
     create: {
       title: "Create Survey",
       welcomeMessage:
-        'Hello! I\'m your survey design assistant. Please describe your survey topic (e.g., "Restaurant Customer Satisfaction Survey"), and I\'ll generate a complete professional survey with 21-28 questions for your review. You can remove questions as needed.',
+        'Hello! I\'m your survey design assistant. Please describe your survey topic (e.g., "Restaurant Customer Satisfaction Survey"), and I\'ll generate a complete professional survey with 21-28 questions for your review. You can edit or remove questions as needed.',
       questionsCount: "questions",
       surveyCreated:
         "Survey created successfully! Here are the details:\n\n**Survey Code:** {shortCode}\n\n**Survey Link:** {surveyUrl}\n\n**Creator Name:** {creatorName}\n\nPlease save your creator name to access your dashboard and response data later.",
