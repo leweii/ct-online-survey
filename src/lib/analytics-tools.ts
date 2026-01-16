@@ -180,7 +180,7 @@ export const getFilteredResponses = tool({
     filters: z.array(z.object({
       questionId: z.string().describe("Question ID to filter on"),
       operator: FilterOperatorSchema.describe("Comparison operator"),
-      value: z.union([z.string(), z.number(), z.boolean()]).describe("Value to compare against"),
+      value: z.string().describe("Value to compare against (use string representation for numbers/booleans)"),
     })).optional().describe("Filters to apply"),
     completedOnly: z.boolean().optional().default(true).describe("Only include completed responses"),
     limit: z.number().optional().default(50).describe("Maximum responses to return"),
