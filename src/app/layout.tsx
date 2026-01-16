@@ -22,10 +22,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <LanguageProvider>
-          <div className="pb-10">
-            {children}
+          <div className="min-h-screen flex flex-col">
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
           </div>
-          <Footer />
           <LanguageSelector />
         </LanguageProvider>
         <Analytics />

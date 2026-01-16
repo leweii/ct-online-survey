@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ModeSelector } from "@/components/ModeSelector";
-import { Footer } from "@/components/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const CREATOR_NAME_KEY = "survey_creator_name";
@@ -143,7 +142,6 @@ export default function Home() {
 
         {/* Footer */}
         <p className="text-center text-gray-400 text-sm mt-8">{t.home.footer}</p>
-        <Footer />
       </div>
     </main>
   );
