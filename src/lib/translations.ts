@@ -143,6 +143,7 @@ export const translations = {
       formModeDesc: "Fill all questions at once in traditional form format",
       chatMode: "Chat Mode",
       chatModeDesc: "Answer questions one by one with AI guidance",
+      startSurvey: "Start Survey",
     },
 
     // Survey card
@@ -349,6 +350,7 @@ export const translations = {
       formModeDesc: "以传统表单形式一次性填写所有问题",
       chatMode: "对话模式",
       chatModeDesc: "在 AI 引导下逐个回答问题",
+      startSurvey: "开始填写",
     },
 
     // Survey card
