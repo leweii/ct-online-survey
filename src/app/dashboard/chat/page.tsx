@@ -137,25 +137,9 @@ function AnalyticsChatContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: "",
-            isInit: true,
+            surveyId: selectedSurvey.id,
             language,
-            creatorCode,
-            context: {
-              surveys: [{
-                id: selectedSurvey.id,
-                title: selectedSurvey.title,
-                description: selectedSurvey.description,
-                questions: selectedSurvey.questions,
-                status: selectedSurvey.status,
-              }],
-              responses: filteredResponses.map(r => ({
-                survey_id: r.survey_id,
-                answers: r.answers,
-                status: r.status,
-                started_at: r.started_at,
-              })),
-              stats,
-            },
+            isInit: true,
           }),
         });
 
@@ -188,7 +172,7 @@ function AnalyticsChatContent() {
     if (!loading && selectedSurvey) {
       fetchInitialAnalysis();
     }
-  }, [selectedSurvey, loading, language, creatorCode, filteredResponses, stats, t.analytics.welcomeMessage]);
+  }, [selectedSurvey, loading, language, t.analytics.welcomeMessage]);
 
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isLoading || !selectedSurvey) return;
@@ -209,24 +193,8 @@ function AnalyticsChatContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage.content,
+          surveyId: selectedSurvey.id,
           language,
-          creatorCode,
-          context: {
-            surveys: [{
-              id: selectedSurvey.id,
-              title: selectedSurvey.title,
-              description: selectedSurvey.description,
-              questions: selectedSurvey.questions,
-              status: selectedSurvey.status,
-            }],
-            responses: filteredResponses.map(r => ({
-              survey_id: r.survey_id,
-              answers: r.answers,
-              status: r.status,
-              started_at: r.started_at,
-            })),
-            stats,
-          },
         }),
       });
 
@@ -255,7 +223,7 @@ function AnalyticsChatContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [inputValue, isLoading, creatorCode, selectedSurvey, filteredResponses, stats, language, t.analytics.analysisError]);
+  }, [inputValue, isLoading, selectedSurvey, language, t.analytics.analysisError]);
 
   // Reset initialized surveys when language changes to get new analysis
   useEffect(() => {
