@@ -25,7 +25,7 @@ export function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [codeInput, setCodeInput] = useState(creatorCode);
-  const [hideClosed, setHideClosed] = useState(false);
+  const [hideClosed, setHideClosed] = useState(true);
 
   // Load creator name from localStorage if no code in URL
   useEffect(() => {
