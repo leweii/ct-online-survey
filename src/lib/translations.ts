@@ -176,7 +176,7 @@ export const translations = {
     chat: {
       aiThinking: "AI is thinking...",
       aiLabel: "AI",
-      designerLabel: "Designer",
+      designerLabel: "Survey Designer",
       assistantLabel: "Assistant",
       analystLabel: "Analyst",
       youLabel: "You",
@@ -382,7 +382,7 @@ export const translations = {
     chat: {
       aiThinking: "AI 正在思考...",
       aiLabel: "AI",
-      designerLabel: "设计师",
+      designerLabel: "问卷设计师",
       assistantLabel: "助手",
       analystLabel: "分析师",
       youLabel: "你",
