@@ -9,8 +9,8 @@ import { Footer } from "@/components/Footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Survey Bot - Create and Take Surveys",
-  description: "A conversational AI-powered survey creation and response tool",
+  title: "ChatSurvey - A Survey Agent",
+  description: "Chat to Create. Chat to Analyze. AI-powered survey creation and analytics platform.",
 };
 
 export default function RootLayout({

@@ -8,8 +8,8 @@
     <meta property="og:title" content="ChatSurvey - AI-Powered Survey Platform">
     <meta property="og:description" content="Create professional surveys through AI conversation, collect responses, and get intelligent analytics.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://leweii.github.io/ct-online-survey/">
-    <link rel="canonical" href="https://leweii.github.io/ct-online-survey/">
+    <meta property="og:url" content="http://www.jakobhe.com/ct-online-survey/">
+    <link rel="canonical" href="http://www.jakobhe.com/ct-online-survey/">
     <style>
         * {
             margin: 0;
@@ -122,6 +122,19 @@
             background: linear-gradient(180deg, white 0%, var(--gray-50) 100%);
         }
 
+        .hero-eyebrow {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .hero h1 {
             font-size: 48px;
             font-weight: 800;
@@ -135,9 +148,10 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            display: inline;
         }
 
-        .hero p {
+        .hero > .container > p:not(.hero-eyebrow) {
             font-size: 20px;
             color: var(--gray-600);
             max-width: 600px;
@@ -326,30 +340,69 @@
         footer {
             background: var(--gray-900);
             color: var(--gray-200);
-            padding: 40px 0;
+            padding: 60px 0 30px;
         }
 
-        .footer-content {
+        .footer-main {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
+            gap: 40px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
         }
 
-        .footer-links {
+        .footer-brand {
+            max-width: 280px;
+        }
+
+        .footer-logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .footer-tagline {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--gray-200);
+            opacity: 0.8;
+        }
+
+        .footer-links-grid {
             display: flex;
-            gap: 24px;
+            gap: 60px;
         }
 
-        .footer-links a {
+        .footer-col {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .footer-col-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .footer-col a {
             color: var(--gray-200);
             text-decoration: none;
+            font-size: 14px;
             transition: color 0.2s;
         }
 
-        .footer-links a:hover {
+        .footer-col a:hover {
             color: white;
+        }
+
+        .footer-bottom {
+            font-size: 14px;
+            color: var(--gray-200);
+            opacity: 0.6;
         }
 
         /* Responsive */
@@ -374,8 +427,21 @@
                 font-size: 28px;
             }
 
-            .footer-content {
+            .footer-main {
                 flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-brand {
+                max-width: 100%;
+            }
+
+            .footer-links-grid {
+                flex-direction: column;
+                gap: 32px;
+            }
+
+            .footer-bottom {
                 text-align: center;
             }
         }
@@ -396,8 +462,9 @@
 
     <section class="hero">
         <div class="container">
-            <h1>Create Surveys with <span>AI Conversation</span></h1>
-            <p>Design professional surveys by simply describing what you need. Our AI generates questions, collects responses, and provides intelligent analytics.</p>
+            <p class="hero-eyebrow">A Survey Agent</p>
+            <h1><span>Chat to Create.</span> <span>Chat to Analyze.</span></h1>
+            <p>Stop spending hours crafting survey questions. Just describe what you want to learn — your AI agent builds the survey and analyzes the results.</p>
             <div class="hero-buttons">
                 <a href="https://ct-online-survey.vercel.app/" class="btn btn-primary">Try Live Demo</a>
                 <a href="https://github.com/leweii/ct-online-survey" class="btn btn-outline">View on GitHub</a>
@@ -429,8 +496,8 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">📊</div>
-                    <h3>AI Analytics</h3>
-                    <p>Chat with an AI analyst to understand your data. Ask questions in natural language and get instant insights.</p>
+                    <h3>Agent-Based Analytics</h3>
+                    <p>Your AI agent queries, cross-tabulates, and interprets data on command. No SQL. No pivot tables. Just ask.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🌐</div>
@@ -503,12 +570,31 @@
     </section>
 
     <footer>
-        <div class="container footer-content">
-            <div>© 2026 ChatSurvey. Open source under MIT License.</div>
-            <div class="footer-links">
-                <a href="https://github.com/leweii/ct-online-survey">GitHub</a>
-                <a href="https://ct-online-survey.vercel.app/">Live Demo</a>
-                <a href="mailto:lewei.me@gmail.com">Contact</a>
+        <div class="container">
+            <div class="footer-main">
+                <div class="footer-brand">
+                    <div class="footer-logo">ChatSurvey</div>
+                    <div class="footer-tagline">A Survey Agent.<br>Chat to Create. Chat to Analyze.</div>
+                </div>
+                <div class="footer-links-grid">
+                    <div class="footer-col">
+                        <div class="footer-col-title">Product</div>
+                        <a href="https://ct-online-survey.vercel.app/">Live Demo</a>
+                        <a href="https://github.com/leweii/ct-online-survey">GitHub</a>
+                    </div>
+                    <div class="footer-col">
+                        <div class="footer-col-title">Author</div>
+                        <a href="https://www.jakobhe.com" target="_blank">Blog</a>
+                        <a href="https://www.xiaohongshu.com/user/profile/5af2e25be8ac2b6d7de52352" target="_blank">RED (Xiaohongshu)</a>
+                    </div>
+                    <div class="footer-col">
+                        <div class="footer-col-title">Contact</div>
+                        <a href="mailto:lewei.me@gmail.com">lewei.me@gmail.com</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div>© 2026 ChatSurvey. Open source under MIT License.</div>
             </div>
         </div>
     </footer>

@@ -157,6 +157,9 @@ export const translations = {
       analyze: "Analyze",
       exportCSV: "Export Data",
       copyLink: "Copy Link",
+      completedResponses: "Completed",
+      partialResponses: "Partial",
+      inProgressResponses: "In Progress",
     },
 
     // Form response
@@ -365,6 +368,9 @@ export const translations = {
       analyze: "分析",
       exportCSV: "导出数据",
       copyLink: "复制链接",
+      completedResponses: "已完成",
+      partialResponses: "部分",
+      inProgressResponses: "进行中",
     },
 
     // Form response

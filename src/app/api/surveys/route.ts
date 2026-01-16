@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // For listing, only fetch needed fields (exclude full questions array)
-  const listFields = "id, short_code, creator_code, creator_name, title, description, status, created_at, updated_at";
+  // For listing, only fetch needed fields (include questions for count)
+  const listFields = "id, short_code, creator_code, creator_name, title, description, status, questions, created_at, updated_at";
   let query = db.from("surveys").select(listFields);
 
   if (creatorName) {

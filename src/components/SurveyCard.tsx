@@ -75,17 +75,17 @@ export function SurveyCard({
         <div className="h-8 w-px bg-gray-200" />
         <div className="text-center">
           <div className="text-2xl font-bold text-green-600">{completedCount}</div>
-          <div className="text-xs text-gray-500">已完成</div>
+          <div className="text-xs text-gray-500">{t.card.completedResponses}</div>
         </div>
         <div className="h-8 w-px bg-gray-200" />
         <div className="text-center">
           <div className="text-2xl font-bold text-yellow-600">{partialCount}</div>
-          <div className="text-xs text-gray-500">部分</div>
+          <div className="text-xs text-gray-500">{t.card.partialResponses}</div>
         </div>
         <div className="h-8 w-px bg-gray-200" />
         <div className="text-center">
           <div className="text-2xl font-bold text-gray-400">{inProgressCount}</div>
-          <div className="text-xs text-gray-500">进行中</div>
+          <div className="text-xs text-gray-500">{t.card.inProgressResponses}</div>
         </div>
       </div>
 
