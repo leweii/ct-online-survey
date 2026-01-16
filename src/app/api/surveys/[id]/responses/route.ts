@@ -28,9 +28,14 @@ export async function GET(
     .eq("survey_id", id)
     .order("started_at", { ascending: false });
 
+  // Debug logging
+  console.log(`[responses API] survey_id: ${id}`);
+  console.log(`[responses API] query result: ${data?.length ?? 0} responses`);
+  console.log(`[responses API] error: ${error?.message ?? 'none'}`);
+
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(data ?? []);
 }
