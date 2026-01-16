@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+// Disable Next.js caching for this route
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const db = supabase as any;
 
