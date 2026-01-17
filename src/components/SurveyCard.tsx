@@ -117,6 +117,14 @@ export function SurveyCard({
             {t.card.close}
           </button>
         )}
+        {onStatusChange && survey.status === "closed" && (
+          <button
+            onClick={() => onStatusChange("active")}
+            className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+          >
+            {t.card.reopen}
+          </button>
+        )}
         {onAnalyze && responseCount > 0 && (
           <button
             onClick={onAnalyze}

@@ -7,9 +7,9 @@ export function Footer() {
 
   const labels = {
     en: {
-      blog: "Blog",
+      blog: "JakobHe's Blog",
       email: "Email",
-      social: "RED (Xiaohongshu)",
+      social: "RED BOOK",
     },
     zh: {
       blog: "博客",
