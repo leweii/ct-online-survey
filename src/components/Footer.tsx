@@ -7,12 +7,12 @@ export function Footer() {
 
   const labels = {
     en: {
-      blog: "JakobHe's Blog",
+      blog: "Blog: 雅Kob | AI Insights",
       email: "Email",
-      social: "RED BOOK",
+      social: "RED (Xiaohongshu)",
     },
     zh: {
-      blog: "博客",
+      blog: "博客：雅Kob | AI洞察",
       email: "邮箱",
       social: "小红书",
     },
