@@ -147,7 +147,7 @@ function CreateSurveyContent() {
         id: data.id,
         short_code: data.short_code,
         creator_name: data.creator_name,
-        isFinalized: true,
+        isFinalized: false, // Keep editing enabled after saving draft
       } : null);
 
       // Add success message to chat
