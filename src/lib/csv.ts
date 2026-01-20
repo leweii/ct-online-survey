@@ -27,12 +27,23 @@ export function generateCSV(questions: Question[], responses: Response[]): strin
       ...completedResponses.map((response) => {
         const answer = response.answers[question.id];
 
+        // Handle missing/null answers
+        if (answer === null || answer === undefined) {
+          return "";
+        }
+
         // Handle array answers (multi-select questions)
         if (Array.isArray(answer)) {
           return answer.join("; ");
         }
 
-        return answer !== undefined ? answer : "";
+        // Handle objects (shouldn't occur, but be defensive)
+        if (typeof answer === "object") {
+          return JSON.stringify(answer);
+        }
+
+        // All primitive types (string, number, boolean)
+        return String(answer);
       }),
     ];
     return row.map(escapeCSV).join(",");
