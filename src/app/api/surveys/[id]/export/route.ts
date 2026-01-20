@@ -37,6 +37,9 @@ export async function GET(
     return NextResponse.json({ error: responsesError.message }, { status: 500 });
   }
 
+  // Debug: Log to help diagnose issues
+  console.log(`[Export] Survey ID: ${id}, Found ${responses?.length || 0} completed responses`);
+
   const csv = generateCSV(
     survey.questions as Question[],
     (responses || []) as Response[]
