@@ -1,5 +1,19 @@
 import type { Question, Response } from "@/types/database";
 
+/**
+ * Generates a CSV export of survey responses in transposed format.
+ * Questions appear as rows, responses as columns.
+ *
+ * @param questions - Array of survey questions
+ * @param responses - Array of survey responses (all statuses)
+ * @returns CSV string with UTF-8 BOM for Excel compatibility
+ *
+ * @example
+ * const csv = generateCSV(questions, responses);
+ * // Output format:
+ * // Question,Response 1,Response 2
+ * // "What is your name?",Alice,Bob
+ */
 export function generateCSV(questions: Question[], responses: Response[]): string {
   // Escape CSV values
   const escapeCSV = (value: unknown): string => {
