@@ -1,5 +1,6 @@
 # AWS Migration Design
 
+**Product:** 畅谈问卷 · 我和AI共创一切  
 **Date:** 2026-04-20  
 **Scope:** Migrate from Supabase + Vercel to AWS DynamoDB + AWS Amplify, replace creator_code with email OTP auth via AWS SES
 
@@ -134,7 +135,7 @@ JWT_SECRET=
 AWS_REGION=ap-northeast-1
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
-AWS_SES_FROM_EMAIL=noreply@yourdomain.com
+AWS_SES_FROM_EMAIL=noreply@mysurvey.jakobhe.com
 
 # Local dev (optional)
 DYNAMODB_ENDPOINT=http://localhost:8000
@@ -143,6 +144,13 @@ DYNAMODB_ENDPOINT=http://localhost:8000
 # NEXT_PUBLIC_SUPABASE_URL
 # NEXT_PUBLIC_SUPABASE_ANON_KEY
 ```
+
+## Infrastructure Prerequisites
+
+- AWS Route 53: `mysurvey.jakobhe.com` DNS already managed ✓
+- AWS SES: `mysurvey.jakobhe.com` domain already verified ✓
+- SES from address: `noreply@mysurvey.jakobhe.com`
+- Amplify custom domain: bind `mysurvey.jakobhe.com` after deployment
 
 ## Security Notes
 
