@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: ct-survey-dynamodb
+    ports:
+      - "8000:8000"
+    command: -jar DynamoDBLocal.jar -sharedDb -dbPath /data
+    volumes:
+      - ./.dynamodb-data:/data
+    working_dir: /home/dynamodblocal
