@@ -1,51 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getSurveyById } from "@/lib/db/surveys";
+import { listResponsesBySurveyId, type ResponseRecord } from "@/lib/db/responses";
 import { generateCSV } from "@/lib/csv";
-import type { Question, Response } from "@/types/database";
+import type { Question } from "@/types/database";
 
-// Disable caching for this route
 export const dynamic = "force-dynamic";
 
-const db = supabase as any;
-
-// GET /api/surveys/[id]/export - Export survey responses as CSV
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const userId = request.headers.get("x-user-id");
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Get survey with questions
-  const { data: survey, error: surveyError } = await db
-    .from("surveys")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const survey = await getSurveyById(id);
+  if (!survey) return NextResponse.json({ error: "Survey not found" }, { status: 404 });
+  if (survey.userId !== userId)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  if (surveyError || !survey) {
-    return NextResponse.json({ error: "Survey not found" }, { status: 404 });
-  }
+  const all = await listResponsesBySurveyId(id);
+  const completed = all.filter((r) => r.status === "completed");
 
-  // Get all completed responses
-  const { data: responses, error: responsesError } = await db
-    .from("responses")
-    .select("*")
-    .eq("survey_id", id)
-    .eq("status", "completed");
-
-  if (responsesError) {
-    return NextResponse.json({ error: responsesError.message }, { status: 500 });
-  }
-
-  // Debug: Log to help diagnose issues
-  console.log(`[Export] Survey ID: ${id}, Found ${responses?.length || 0} completed responses`);
-
+  // Adapt ResponseRecord to the shape generateCSV expects
   const csv = generateCSV(
     survey.questions as Question[],
-    (responses || []) as Response[]
+    completed.map((r: ResponseRecord) => ({
+      id: r.responseId,
+      survey_id: r.surveyId,
+      respondent_id: r.respondentId,
+      answers: r.answers,
+      status: r.status,
+      started_at: r.startedAt,
+      completed_at: r.completedAt ?? null,
+      current_question_index: r.currentQuestionIndex,
+    })) as any
   );
 
-  // Return CSV file (no caching to ensure fresh data)
   return new NextResponse(csv, {
     status: 200,
     headers: {
