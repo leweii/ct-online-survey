@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, Suspense, useEffect } from "react";
+import { useState, useCallback, Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChatInterface, Message } from "@/components/ChatInterface";
 import { SurveyPreview } from "@/components/SurveyPreview";
@@ -25,7 +25,6 @@ function CreateSurveyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
-  const customCreatorName = searchParams.get("creator") || "";
   const editSurveyId = searchParams.get("edit") || "";
   const [messages, setMessages] = useState<Message[]>([]);
   const [surveyState, setSurveyState] = useState<SurveyState | null>(null);
@@ -35,6 +34,7 @@ function CreateSurveyContent() {
   const [verified, setVerified] = useState(() => isVerified("create"));
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isLoadingEdit, setIsLoadingEdit] = useState(!!editSurveyId);
+  const isSavingRef = useRef(false);
 
   // Load existing survey for editing
   useEffect(() => {
@@ -123,7 +123,9 @@ function CreateSurveyContent() {
 
   const handleFinalize = useCallback(async () => {
     if (!surveyState || !surveyState.title || surveyState.questions.length === 0) return;
+    if (isSavingRef.current) return;
 
+    isSavingRef.current = true;
     setIsSaving(true);
     try {
       const response = await fetch("/api/surveys", {
@@ -134,8 +136,6 @@ function CreateSurveyContent() {
           title: surveyState.title,
           description: surveyState.description,
           questions: surveyState.questions,
-          creator_code: surveyState.creator_code,
-          customCreatorName: customCreatorName || undefined,
         }),
       });
 
@@ -157,7 +157,7 @@ function CreateSurveyContent() {
         : t.create.surveyCreated
             .replace("{shortCode}", data.short_code)
             .replace("{surveyUrl}", surveyUrl)
-            .replace("{creatorName}", data.creator_name);
+            .replace("{creatorName}", data.creator_name ?? "");
 
       setMessages((prev) => [...prev, {
         id: Date.now().toString() + "-system",
@@ -172,9 +172,10 @@ function CreateSurveyContent() {
         content: t.create.errorMessage,
       }]);
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
-  }, [surveyState, customCreatorName, t.create.surveyCreated, t.create.errorMessage, t.preview?.surveyUpdated]);
+  }, [surveyState, t.create.surveyCreated, t.create.errorMessage, t.preview?.surveyUpdated]);
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -190,7 +191,6 @@ function CreateSurveyContent() {
           body: JSON.stringify({
             messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
             surveyState,
-            customCreatorName: customCreatorName || undefined,
           }),
         });
 
@@ -229,7 +229,7 @@ function CreateSurveyContent() {
                   accumulatedText += "\n\n" + t.create.surveyCreated
                     .replace("{shortCode}", shortCode)
                     .replace("{surveyUrl}", surveyUrl)
-                    .replace("{creatorName}", creatorName);
+                    .replace("{creatorName}", creatorName ?? "");
                 }
               } catch { /* Ignore parse errors */ }
             }
@@ -247,7 +247,7 @@ function CreateSurveyContent() {
         setStreamingContent("");
       }
     },
-    [messages, surveyState, customCreatorName, t.create.surveyCreated, t.create.errorMessage]
+    [messages, surveyState, t.create.surveyCreated, t.create.errorMessage]
   );
 
   if (!verified) {
@@ -267,11 +267,22 @@ function CreateSurveyContent() {
 
   const questionCount = surveyState?.questions.length || 0;
 
+  // Progress status bar state
+  const progressStatus = isSaving
+    ? "saving"
+    : surveyState?.id
+    ? "saved"
+    : questionCount > 0
+    ? "unsaved"
+    : "empty";
+
+  const suggestedPrompts = t.create.suggestedPrompts;
+
   return (
     <div className="h-screen flex flex-col">
       <header className="sticky top-0 z-10 border-b bg-white px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push("/")} className="text-gray-600 hover:text-gray-800">
+          <button onClick={() => router.push("/dashboard")} className="text-gray-600 hover:text-gray-800">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -284,7 +295,33 @@ function CreateSurveyContent() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-full md:w-[40%] flex flex-col overflow-hidden border-r border-gray-200">
+        {/* Chat panel: 30% */}
+        <div className="w-full md:w-[30%] flex flex-col overflow-hidden border-r border-gray-200">
+          {/* Progress status bar */}
+          {progressStatus !== "empty" && (
+            <div className={`flex items-center gap-2 px-4 py-2 border-b text-xs font-medium ${
+              progressStatus === "saving"
+                ? "bg-blue-50 text-blue-600 border-blue-100"
+                : progressStatus === "saved"
+                ? "bg-green-50 text-green-700 border-green-100"
+                : "bg-gray-50 text-gray-500 border-gray-200"
+            }`}>
+              {progressStatus === "saving" && (
+                <span className="inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              )}
+              {progressStatus === "saved" && (
+                <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+              )}
+              {progressStatus === "unsaved" && (
+                <span className="w-2 h-2 rounded-full bg-gray-400 inline-block" />
+              )}
+              <span>
+                {progressStatus === "saving" && "保存中…"}
+                {progressStatus === "saved" && `草稿已保存 · ${questionCount} 道题`}
+                {progressStatus === "unsaved" && `设计中 · ${questionCount} 道题 · 未保存`}
+              </span>
+            </div>
+          )}
           <ChatInterface
             messages={messages}
             onSendMessage={handleSendMessage}
@@ -292,10 +329,12 @@ function CreateSurveyContent() {
             placeholder={t.create.inputPlaceholder}
             streamingContent={streamingContent}
             aiLabel={t.chat.designerLabel}
+            suggestedPrompts={suggestedPrompts}
           />
         </div>
 
-        <div className="hidden md:flex md:w-[60%] flex-col bg-gray-50 overflow-hidden">
+        {/* Preview panel: 70% */}
+        <div className="hidden md:flex md:w-[70%] flex-col bg-gray-50 overflow-hidden">
           <SurveyPreview
             surveyState={surveyState}
             isLoading={isLoading}

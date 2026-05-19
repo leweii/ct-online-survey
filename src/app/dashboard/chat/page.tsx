@@ -30,7 +30,6 @@ function AnalyticsChatContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { t, language } = useLanguage();
-  const creatorCode = searchParams.get("code") || "";
   const initialSurveyId = searchParams.get("survey") || "";
 
   const [surveys, setSurveys] = useState<SurveyWithCounts[]>([]);
@@ -64,21 +63,19 @@ function AnalyticsChatContent() {
   // Fetch surveys with counts on mount (single optimized request)
   useEffect(() => {
     async function fetchData() {
-      if (!creatorCode) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        // Use optimized endpoint with counts - no N+1 queries
-        const res = await fetch(`/api/surveys?creator_code=${encodeURIComponent(creatorCode)}&include=counts`);
+        const res = await fetch("/api/surveys?include=counts");
+        if (res.status === 401) {
+          router.push("/login?next=/dashboard");
+          return;
+        }
         if (!res.ok) throw new Error("Failed to fetch surveys");
         const data = await res.json();
-        setSurveys(data);
+        const normalized = data.map((s: any) => ({ ...s, id: s.id ?? s.surveyId }));
+        setSurveys(normalized);
 
-        // Auto-select first survey if none selected
-        if (!initialSurveyId && data.length > 0) {
-          setSelectedSurveyId(data[0].id);
+        if (!initialSurveyId && normalized.length > 0) {
+          setSelectedSurveyId(normalized[0].id);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -88,7 +85,7 @@ function AnalyticsChatContent() {
     }
 
     fetchData();
-  }, [creatorCode, initialSurveyId]);
+  }, [initialSurveyId, router]);
 
   // Fetch initial AI analysis when survey changes
   useEffect(() => {
@@ -253,16 +250,14 @@ function AnalyticsChatContent() {
       <header className="sticky top-0 z-10 bg-white border-b px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {creatorCode && (
-              <button
-                onClick={() => router.push(`/dashboard?code=${encodeURIComponent(creatorCode)}`)}
-                className="text-gray-600 hover:text-gray-800"
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="text-gray-600 hover:text-gray-800"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-            )}
             <h1 className="text-lg font-semibold">{t.analytics.title}</h1>
           </div>
 

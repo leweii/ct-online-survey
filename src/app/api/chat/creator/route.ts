@@ -1,25 +1,19 @@
 import { streamText } from "ai";
 import { geminiPro, StreamActionBuffer } from "@/lib/ai";
-import { supabase } from "@/lib/supabase";
 import { nanoid } from "nanoid";
 import type { Question, QuestionType } from "@/types/database";
-import {
-  generateUniqueShortCode,
-  generateUniqueCreatorName,
-} from "@/lib/identifiers";
-
-const db = supabase as any;
+import { generateUniqueShortCode } from "@/lib/identifiers";
+import { createSurvey } from "@/lib/db/surveys";
+import { NextRequest, NextResponse } from "next/server";
 
 interface SurveyState {
   id?: string;
-  short_code?: string;  // User-facing survey code
+  shortCode?: string;
   title?: string;
   description?: string;
   questions: Question[];
-  creator_code: string;  // Legacy, kept for backward compatibility
-  creator_name?: string;  // Fun pet name for creator
   isFinalized: boolean;
-  language?: string; // Auto-detected from user input
+  language?: string;
 }
 
 const CREATOR_SYSTEM_PROMPT = `You are a professional survey design expert. You create comprehensive, high-quality, scientifically rigorous surveys.
@@ -112,46 +106,30 @@ const CREATOR_SYSTEM_PROMPT = `You are a professional survey design expert. You 
 - User: "把标题改成员工调查" → Use set_title
 - User: "修改第5题的选项" → Use update_question with index 4 and new options`;
 
-export async function POST(request: Request) {
-  try {
-    const { messages, surveyState: incomingState, customCreatorName } = await request.json();
+export async function POST(request: NextRequest) {
+  const userId = request.headers.get("x-user-id");
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // Initialize or use existing state
-    const surveyState: SurveyState = incomingState || {
-      questions: [],
-      creator_code: nanoid(12),
-      isFinalized: false,
-    };
+  try {
+    const { messages, surveyState: incomingState } = await request.json();
+
+    const surveyState: SurveyState = incomingState || { questions: [], isFinalized: false };
 
     // Build context about current survey state (user may have edited this in the preview panel)
     let stateContext = "\n\n## IMPORTANT: Current Survey State (User Edited)\n";
     stateContext += "The user can edit the survey directly in the preview panel. The state below reflects their latest edits.\n";
     stateContext += "**You MUST preserve this state exactly unless the user explicitly asks for changes.**\n\n";
-
-    if (surveyState.title) {
-      stateContext += `Title: ${surveyState.title}\n`;
-    }
-    if (surveyState.description) {
-      stateContext += `Description: ${surveyState.description}\n`;
-    }
+    if (surveyState.title) stateContext += `Title: ${surveyState.title}\n`;
+    if (surveyState.description) stateContext += `Description: ${surveyState.description}\n`;
     if (surveyState.questions.length > 0) {
       stateContext += `\nQuestions (${surveyState.questions.length}):\n`;
       surveyState.questions.forEach((q, i) => {
         stateContext += `  ${i + 1}. [${q.type}${q.required ? ", required" : ""}] ${q.text}`;
-        if (q.options && q.options.length > 0) {
-          stateContext += ` | Options: ${q.options.join(", ")}`;
-        }
+        if (q.options && q.options.length > 0) stateContext += ` | Options: ${q.options.join(", ")}`;
         stateContext += `\n`;
       });
       stateContext += "\n**DO NOT use set_questions to replace all questions unless the user asks to regenerate the entire survey.**\n";
       stateContext += "**Use add_question to add new questions, remove_question to delete specific questions.**\n";
-    }
-    if (!surveyState.title) {
-      stateContext += "- No title yet\n";
-    } else if (!surveyState.description) {
-      stateContext += "- No description yet\n";
-    } else if (surveyState.questions.length === 0) {
-      stateContext += "- No questions yet (generate initial questions)\n";
     }
 
     const result = streamText({
@@ -160,12 +138,10 @@ export async function POST(request: Request) {
       messages,
     });
 
-    // Process the stream and extract actions incrementally
     const encoder = new TextEncoder();
     const actionBuffer = new StreamActionBuffer();
     const updatedState = { ...surveyState };
 
-    // Helper to process a single action (non-async actions only during streaming)
     const processAction = (action: Record<string, any>): boolean => {
       let changed = false;
       switch (action.type) {
@@ -182,22 +158,24 @@ export async function POST(request: Request) {
           changed = true;
           break;
         case "add_question": {
-          const questionData = action.question || {};
-          const newQuestion: Question = {
-            id: nanoid(8),
-            type: (questionData.type as QuestionType) || "text",
-            text: questionData.text || "",
-            required: questionData.required ?? true,
-            options: questionData.options,
-            validation: questionData.validation,
-          };
-          updatedState.questions = [...updatedState.questions, newQuestion];
+          const q = action.question || {};
+          updatedState.questions = [
+            ...updatedState.questions,
+            {
+              id: nanoid(8),
+              type: (q.type as QuestionType) || "text",
+              text: q.text || "",
+              required: q.required ?? true,
+              options: q.options,
+              validation: q.validation,
+            },
+          ];
           changed = true;
           break;
         }
         case "set_questions": {
-          const questionsData = action.questions || [];
-          updatedState.questions = questionsData.map((q: Partial<Question>) => ({
+          const qs = action.questions || [];
+          updatedState.questions = qs.map((q: Partial<Question>) => ({
             id: nanoid(8),
             type: (q.type as QuestionType) || "text",
             text: q.text || "",
@@ -209,25 +187,24 @@ export async function POST(request: Request) {
           break;
         }
         case "remove_question": {
-          const index = typeof action.index === "number" ? action.index : parseInt(action.index, 10);
-          if (!isNaN(index) && index >= 0 && index < updatedState.questions.length) {
-            updatedState.questions = updatedState.questions.filter((_, i) => i !== index);
+          const i = typeof action.index === "number" ? action.index : parseInt(action.index, 10);
+          if (!isNaN(i) && i >= 0 && i < updatedState.questions.length) {
+            updatedState.questions = updatedState.questions.filter((_, idx) => idx !== i);
             changed = true;
           }
           break;
         }
         case "update_question": {
-          const index = typeof action.index === "number" ? action.index : parseInt(action.index, 10);
-          if (!isNaN(index) && index >= 0 && index < updatedState.questions.length) {
-            const updates = action.updates || {};
-            updatedState.questions = updatedState.questions.map((q, i) =>
-              i === index ? { ...q, ...updates } : q
+          const i = typeof action.index === "number" ? action.index : parseInt(action.index, 10);
+          if (!isNaN(i) && i >= 0 && i < updatedState.questions.length) {
+            const u = action.updates || {};
+            updatedState.questions = updatedState.questions.map((q, idx) =>
+              idx === i ? { ...q, ...u } : q
             );
             changed = true;
           }
           break;
         }
-        // "finalize" is handled separately as it's async
       }
       return changed;
     };
@@ -238,87 +215,46 @@ export async function POST(request: Request) {
           let pendingFinalizeAction: Record<string, any> | null = null;
 
           for await (const chunk of result.textStream) {
-            // Buffer the chunk and get safe text + any complete actions
             const { text: safeText, actions } = actionBuffer.push(chunk);
-
             if (safeText) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ text: safeText })}\n\n`)
-              );
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: safeText })}\n\n`));
             }
-
-            // Process any complete actions immediately
             for (const action of actions) {
-              if (action.type === "finalize") {
-                pendingFinalizeAction = action;
-              } else {
-                const changed = processAction(action);
-                if (changed) {
-                  // Send intermediate state update for real-time preview
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ surveyState: updatedState })}\n\n`)
-                  );
-                }
+              if (action.type === "finalize") pendingFinalizeAction = action;
+              else if (processAction(action)) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ surveyState: updatedState })}\n\n`));
               }
             }
           }
 
-          // Flush any remaining buffered content
           const { text: remaining, actions: remainingActions } = actionBuffer.flush();
-          if (remaining) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ text: remaining })}\n\n`)
-            );
-          }
-
-          // Process any remaining actions
+          if (remaining) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: remaining })}\n\n`));
           for (const action of remainingActions) {
-            if (action.type === "finalize") {
-              pendingFinalizeAction = action;
-            } else {
-              const changed = processAction(action);
-              if (changed) {
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ surveyState: updatedState })}\n\n`)
-                );
-              }
+            if (action.type === "finalize") pendingFinalizeAction = action;
+            else if (processAction(action)) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ surveyState: updatedState })}\n\n`));
             }
           }
 
-          // Handle finalize action (async database operation)
           if (pendingFinalizeAction && updatedState.title) {
-            const shortCode = await generateUniqueShortCode(db);
+            const shortCode = await generateUniqueShortCode();
             const language = updatedState.language || "zh";
-            const creatorName = customCreatorName?.trim() || await generateUniqueCreatorName(db, language);
-
-            const { data: survey } = await db
-              .from("surveys")
-              .insert({
-                title: updatedState.title,
-                description: updatedState.description || null,
-                questions: updatedState.questions,
-                short_code: shortCode,
-                creator_code: updatedState.creator_code,
-                creator_name: creatorName,
-                settings: { language },
-                status: "active",
-              })
-              .select()
-              .single();
-
-            if (survey) {
-              updatedState.id = survey.id;
-              updatedState.short_code = survey.short_code;
-              updatedState.creator_name = survey.creator_name;
-              updatedState.isFinalized = true;
-            }
+            const saved = await createSurvey({
+              userId,
+              shortCode,
+              title: updatedState.title,
+              description: updatedState.description || null,
+              questions: updatedState.questions,
+              settings: { language },
+              status: "active",
+            });
+            updatedState.id = saved.surveyId;
+            updatedState.shortCode = saved.shortCode;
+            updatedState.isFinalized = true;
           }
 
-          // Send final state update
           controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ done: true, surveyState: updatedState })}\n\n`
-            )
+            encoder.encode(`data: ${JSON.stringify({ done: true, surveyState: updatedState })}\n\n`)
           );
           controller.close();
         } catch (error) {

@@ -14,27 +14,27 @@ export async function POST(request: NextRequest) {
     const code = body?.code;
 
     if (typeof rawEmail !== "string" || !EMAIL_RE.test(rawEmail)) {
-      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+      return NextResponse.json({ error: "INVALID_EMAIL" }, { status: 400 });
     }
     if (typeof code !== "string" || !CODE_RE.test(code)) {
-      return NextResponse.json({ error: "Invalid code" }, { status: 400 });
+      return NextResponse.json({ error: "INVALID_CODE_FORMAT" }, { status: 400 });
     }
     const email = rawEmail.trim().toLowerCase();
 
     const record = await getOtp(email);
     if (!record) {
-      return NextResponse.json({ error: "No OTP requested" }, { status: 400 });
+      return NextResponse.json({ error: "NO_OTP" }, { status: 400 });
     }
 
     const nowSec = Math.floor(Date.now() / 1000);
     if (record.expiresAt < nowSec) {
       await deleteOtp(email);
-      return NextResponse.json({ error: "OTP expired" }, { status: 400 });
+      return NextResponse.json({ error: "EXPIRED" }, { status: 400 });
     }
 
     const ok = await verifyOtp(code, record.otpHash);
     if (!ok) {
-      return NextResponse.json({ error: "Incorrect code" }, { status: 400 });
+      return NextResponse.json({ error: "INCORRECT" }, { status: 400 });
     }
 
     await deleteOtp(email);
@@ -47,6 +47,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, userId: user.userId, email: user.email });
   } catch (err) {
     console.error("verify-otp error:", err);
-    return NextResponse.json({ error: "Verification failed" }, { status: 500 });
+    return NextResponse.json({ error: "VERIFICATION_FAILED" }, { status: 500 });
   }
 }

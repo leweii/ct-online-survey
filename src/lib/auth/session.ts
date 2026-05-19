@@ -6,7 +6,7 @@ export const SESSION_COOKIE = "ct_survey_session";
 const SEVEN_DAYS = 7 * 24 * 60 * 60;
 
 export async function setSessionCookie(payload: SessionPayload): Promise<void> {
-  const token = signSessionToken(payload);
+  const token = await signSessionToken(payload);
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -27,7 +27,7 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
   return verifySessionToken(token);
 }
 
-export function getCurrentUserFromRequest(req: NextRequest): SessionPayload | null {
+export async function getCurrentUserFromRequest(req: NextRequest): Promise<SessionPayload | null> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   return verifySessionToken(token);

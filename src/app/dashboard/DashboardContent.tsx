@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { SurveyCard } from "@/components/SurveyCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Survey } from "@/types/database";
-
-const CREATOR_NAME_KEY = "survey_creator_name";
 
 interface SurveyWithCount extends Survey {
   responseCount: number;
@@ -15,75 +13,53 @@ interface SurveyWithCount extends Survey {
   inProgressCount: number;
 }
 
+type StatusFilter = "all" | "active" | "draft" | "closed";
+
 export function DashboardContent() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const { t } = useLanguage();
-  const creatorCode = searchParams.get("code") || "";
 
+  const [email, setEmail] = useState<string | null>(null);
   const [surveys, setSurveys] = useState<SurveyWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [codeInput, setCodeInput] = useState(creatorCode);
-  const [hideClosed, setHideClosed] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [signingOut, setSigningOut] = useState(false);
 
-  // Load creator name from localStorage if no code in URL
-  useEffect(() => {
-    if (!creatorCode) {
-      const saved = localStorage.getItem(CREATOR_NAME_KEY);
-      if (saved) {
-        setCodeInput(saved);
-      }
-    }
-  }, [creatorCode]);
-
-  const fetchSurveys = useCallback(async (code: string) => {
-    if (!code) {
-      setLoading(false);
-      return;
-    }
-
+  const fetchSurveys = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     try {
-      // Use optimized endpoint with counts included (single request instead of N+1)
-      const res = await fetch(`/api/surveys?creator_code=${encodeURIComponent(code)}&include=counts`);
+      const res = await fetch("/api/surveys?include=counts");
+      if (res.status === 401) {
+        router.push("/login?next=/dashboard");
+        return;
+      }
       if (!res.ok) throw new Error("Failed to fetch surveys");
-
       const data = await res.json();
-
-      // Map response counts to expected format
-      const surveysWithCounts = data.map((survey: any) => ({
+      const mapped = data.map((survey: any) => ({
         ...survey,
+        id: survey.id ?? survey.surveyId,
         responseCount: survey.responseCounts?.total ?? 0,
         completedCount: survey.responseCounts?.completed ?? 0,
         partialCount: survey.responseCounts?.partial ?? 0,
         inProgressCount: survey.responseCounts?.inProgress ?? 0,
       }));
-
-      setSurveys(surveysWithCounts);
+      setSurveys(mapped);
     } catch {
       setError(t.survey.loadFailed);
     } finally {
       setLoading(false);
     }
-  }, [t.survey.loadFailed]);
+  }, [router, t.survey.loadFailed]);
 
   useEffect(() => {
-    if (creatorCode) {
-      fetchSurveys(creatorCode);
-    } else {
-      setLoading(false);
-    }
-  }, [creatorCode, fetchSurveys]);
-
-  const handleCodeSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (codeInput.trim()) {
-      router.push(`/dashboard?code=${encodeURIComponent(codeInput.trim())}`);
-    }
-  };
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => setEmail(data?.user?.email ?? null))
+      .catch(() => setEmail(null));
+    fetchSurveys();
+  }, [fetchSurveys]);
 
   const handleExport = async (surveyId: string) => {
     window.open(`/api/surveys/${surveyId}/export`, "_blank");
@@ -99,140 +75,170 @@ export function DashboardContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-
       if (res.ok) {
         setSurveys((prev) =>
           prev.map((s) => (s.id === surveyId ? { ...s, status: newStatus } : s))
         );
       }
-    } catch (error) {
-      console.error("Failed to update status:", error);
+    } catch (err) {
+      console.error("Failed to update status:", err);
     }
   };
 
-  if (!creatorCode) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <h1 className="text-2xl font-bold text-center mb-6">{t.dashboard.title}</h1>
-          <form onSubmit={handleCodeSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t.dashboard.enterNameLabel}
-              </label>
-              <input
-                type="text"
-                value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value)}
-                placeholder={t.dashboard.namePlaceholder}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-            >
-              {t.dashboard.viewSurveys}
-            </button>
-          </form>
-          <button
-            onClick={() => router.push("/")}
-            className="w-full mt-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-          >
-            {t.returnHome}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  const filteredSurveys = surveys.filter(
+    (s) => statusFilter === "all" || s.status === statusFilter
+  );
+
+  const counts = {
+    all: surveys.length,
+    active: surveys.filter((s) => s.status === "active").length,
+    draft: surveys.filter((s) => s.status === "draft").length,
+    closed: surveys.filter((s) => s.status === "closed").length,
+  };
+
+  const totalResponses = surveys.reduce((sum, s) => sum + s.responseCount, 0);
+
+  const filterTabs: { key: StatusFilter; label: string }[] = [
+    { key: "all", label: t.dashboard.filterAll },
+    { key: "active", label: t.card.active },
+    { key: "draft", label: t.card.draft },
+    { key: "closed", label: t.card.closed },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white border-b px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push("/")}
-              className="text-gray-600 hover:text-gray-800"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <div>
-              <h1 className="text-lg font-semibold">{t.dashboard.title}</h1>
-              <p className="text-sm text-gray-500">{t.dashboard.name}{creatorCode}</p>
-            </div>
+      <header className="sticky top-0 z-10 bg-white border-b">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">畅谈问卷</h1>
+            {email && <p className="text-xs text-gray-400 mt-0.5">{email}</p>}
           </div>
-          <button
-            onClick={() => router.push(`/create?creator=${encodeURIComponent(creatorCode)}`)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            {t.dashboard.createSurvey}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/create")}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              {t.dashboard.createSurvey}
+            </button>
+            <button
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
+            >
+              {signingOut ? "…" : t.home.signOut}
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="max-w-6xl mx-auto p-4">
+      <main className="max-w-6xl mx-auto px-4 py-6">
         {loading ? (
-          <div className="text-center py-12">
+          <div className="text-center py-20">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">{t.dashboard.loadingSurveys}</p>
+            <p className="text-gray-500 text-sm">{t.dashboard.loadingSurveys}</p>
           </div>
         ) : error ? (
-          <div className="text-center py-12">
-            <p className="text-red-500">{error}</p>
+          <div className="text-center py-20">
+            <p className="text-red-500 mb-4">{error}</p>
             <button
-              onClick={() => fetchSurveys(creatorCode)}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              onClick={fetchSurveys}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
             >
               {t.retry}
             </button>
           </div>
         ) : surveys.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">{t.dashboard.noSurveysFound}</p>
+          <div className="text-center py-20">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-50 flex items-center justify-center">
+              <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p className="text-gray-600 mb-2 font-medium">{t.dashboard.noSurveysFound}</p>
+            <p className="text-gray-400 text-sm mb-6">用AI来设计你的第一份问卷吧</p>
             <button
-              onClick={() => router.push(`/create?creator=${encodeURIComponent(creatorCode)}`)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              onClick={() => router.push("/create")}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
             >
               {t.dashboard.createFirst}
             </button>
           </div>
         ) : (
           <>
-            {/* Filter toggle */}
-            <div className="flex items-center justify-end mb-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hideClosed}
-                  onChange={(e) => setHideClosed(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-600">{t.dashboard.hideClosed}</span>
-              </label>
+            {/* Stats summary */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+                <div className="text-2xl font-bold text-gray-900">{surveys.length}</div>
+                <div className="text-xs text-gray-500 mt-0.5">问卷总数</div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+                <div className="text-2xl font-bold text-green-600">{counts.active}</div>
+                <div className="text-xs text-gray-500 mt-0.5">进行中</div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+                <div className="text-2xl font-bold text-blue-600">{totalResponses}</div>
+                <div className="text-xs text-gray-500 mt-0.5">累计回复</div>
+              </div>
             </div>
-            <div className="grid gap-6 lg:grid-cols-2">
-            {surveys
-              .filter((survey) => !hideClosed || survey.status !== "closed")
-              .map((survey) => (
-              <SurveyCard
-                key={survey.id}
-                survey={survey}
-                responseCount={survey.responseCount}
-                completedCount={survey.completedCount}
-                partialCount={survey.partialCount}
-                inProgressCount={survey.inProgressCount}
-                onExport={() => handleExport(survey.id)}
-                onStatusChange={(status) => handleStatusChange(survey.id, status)}
-                onAnalyze={() => router.push(`/dashboard/chat?code=${encodeURIComponent(creatorCode)}&survey=${survey.id}`)}
-                onEdit={() => router.push(`/create?edit=${survey.id}&creator=${encodeURIComponent(creatorCode)}`)}
-              />
-            ))}
+
+            {/* Filter tabs */}
+            <div className="flex items-center gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit">
+              {filterTabs.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setStatusFilter(key)}
+                  className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+                    statusFilter === key
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {label}
+                  {counts[key] > 0 && (
+                    <span className={`ml-1.5 text-xs ${statusFilter === key ? "text-blue-600" : "text-gray-400"}`}>
+                      {counts[key]}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
+
+            {filteredSurveys.length === 0 ? (
+              <div className="text-center py-12 text-gray-400 text-sm">
+                该分类下暂无问卷
+              </div>
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-2">
+                {filteredSurveys.map((survey) => (
+                  <SurveyCard
+                    key={survey.id}
+                    survey={survey}
+                    responseCount={survey.responseCount}
+                    completedCount={survey.completedCount}
+                    partialCount={survey.partialCount}
+                    inProgressCount={survey.inProgressCount}
+                    onExport={() => handleExport(survey.id)}
+                    onStatusChange={(status) => handleStatusChange(survey.id, status)}
+                    onAnalyze={() => router.push(`/dashboard/chat?survey=${survey.id}`)}
+                    onEdit={() => router.push(`/create?edit=${survey.id}`)}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
       </main>

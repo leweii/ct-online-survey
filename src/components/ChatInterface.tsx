@@ -18,6 +18,7 @@ interface ChatInterfaceProps {
   streamingContent?: string;
   hideInput?: boolean;
   aiLabel?: string;
+  suggestedPrompts?: string[];
 }
 
 export function ChatInterface({
@@ -28,6 +29,7 @@ export function ChatInterface({
   streamingContent,
   hideInput = false,
   aiLabel,
+  suggestedPrompts,
 }: ChatInterfaceProps) {
   const { t } = useLanguage();
   const [input, setInput] = useState("");
@@ -38,7 +40,6 @@ export function ChatInterface({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingContent]);
 
-  // Auto-resize textarea
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -56,7 +57,6 @@ export function ChatInterface({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter without Shift sends the message
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (input.trim() && !isLoading) {
@@ -64,8 +64,21 @@ export function ChatInterface({
         setInput("");
       }
     }
-    // Shift+Enter allows default behavior (new line)
   };
+
+  const handleChipClick = (prompt: string) => {
+    if (isLoading) return;
+    onSendMessage(prompt);
+  };
+
+  // Show chips only after first welcome message, before user sends anything
+  const showChips =
+    suggestedPrompts &&
+    suggestedPrompts.length > 0 &&
+    messages.length === 1 &&
+    messages[0].role === "assistant" &&
+    !isLoading &&
+    !streamingContent;
 
   return (
     <div className="flex flex-col h-full">
@@ -79,6 +92,22 @@ export function ChatInterface({
             aiLabel={aiLabel}
           />
         ))}
+
+        {/* Prompt chips — shown only on welcome screen */}
+        {showChips && (
+          <div className="flex flex-wrap gap-2 pt-2 pl-1">
+            {suggestedPrompts!.map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => handleChipClick(prompt)}
+                className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors shadow-sm"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Streaming content */}
         {streamingContent && (
           <MessageBubble
@@ -88,7 +117,8 @@ export function ChatInterface({
             aiLabel={aiLabel}
           />
         )}
-        {/* Loading indicator when waiting for response */}
+
+        {/* Loading indicator */}
         {isLoading && !streamingContent && (
           <div className="py-2">
             <div className="flex items-center gap-2 mb-1">

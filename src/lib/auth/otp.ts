@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { randomInt } from "crypto";
+import { createHash, randomBytes, randomInt, timingSafeEqual } from "crypto";
 
 const OTP_TTL_SECONDS = 10 * 60;
 
@@ -17,4 +17,18 @@ export async function verifyOtp(code: string, hash: string): Promise<boolean> {
 
 export function otpExpiresAtUnix(): number {
   return Math.floor(Date.now() / 1000) + OTP_TTL_SECONDS;
+}
+
+export function generateMagicToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+export function hashMagicToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export function verifyMagicToken(token: string, hash: string): boolean {
+  const computed = hashMagicToken(token);
+  if (computed.length !== hash.length) return false;
+  return timingSafeEqual(Buffer.from(computed), Buffer.from(hash));
 }

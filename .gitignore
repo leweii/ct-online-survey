@@ -38,3 +38,8 @@ next-env.d.ts
 
 # DynamoDB local data
 .dynamodb-data/
+
+# SST
+.sst/
+sst-env.d.ts
+.lazyweb/

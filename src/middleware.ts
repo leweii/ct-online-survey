@@ -7,9 +7,9 @@ const PROTECTED_API_PREFIXES = ["/api/surveys", "/api/chat/creator"];
 // GET on exact /api/surveys/[id] is public (survey takers load by shortCode/UUID)
 const PUBLIC_GET_API_RE = /^\/api\/surveys\/[^/]+$/;
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const user = getCurrentUserFromRequest(req);
+  const user = await getCurrentUserFromRequest(req);
 
   // Protected pages: redirect unauthenticated users to /login
   if (PROTECTED_PAGES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
@@ -31,10 +31,10 @@ export function middleware(req: NextRequest) {
 
     // Inject userId + email headers for downstream route handlers
     if (user) {
-      const res = NextResponse.next();
-      res.headers.set("x-user-id", user.userId);
-      res.headers.set("x-user-email", user.email);
-      return res;
+      const headers = new Headers(req.headers);
+      headers.set("x-user-id", user.userId);
+      headers.set("x-user-email", user.email);
+      return NextResponse.next({ request: { headers } });
     }
   }
 

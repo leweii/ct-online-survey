@@ -4,6 +4,7 @@ import { getDocClient, tableName } from "@/lib/dynamodb";
 export interface OtpRecord {
   email: string;
   otpHash: string;
+  magicTokenHash: string;
   expiresAt: number;
 }
 

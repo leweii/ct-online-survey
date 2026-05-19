@@ -13,18 +13,17 @@ export const translations = {
     // Home page
     home: {
       title: "ChatSurvey",
-      subtitle: "Intelligent Survey Design & Analytics Platform",
-      creatorNameLabel: "Administrator Name",
-      creatorNamePlaceholder: "Enter your name or employee ID",
-      creatorNameHint: "This identifier will be used to manage your surveys and access reports",
+      subtitle: "Co-create with AI",
       createDescription: "Design professional surveys through intelligent conversation",
+      signInToCreate: "Sign in to create surveys",
       startCreate: "Create Survey",
       viewDashboard: "Management Center",
+      signedInAs: "Signed in as",
+      signOut: "Sign out",
       takeDescription: "Enter survey code or link to participate",
       surveyCodePlaceholder: "Survey code (e.g., A7B2) or link",
       startFill: "Start Survey",
       enterCodeError: "Please enter a valid survey code or link",
-      enterNameError: "Please enter administrator name",
       footer: "Intelligent Surveys · Actionable Insights",
     },
 
@@ -35,9 +34,15 @@ export const translations = {
         "Welcome to the Survey Design Assistant.\n\nPlease describe your survey requirements, and I will generate a professional questionnaire for you.\n\n**Common Templates:**\n- 📊 Employee Satisfaction Survey\n- 🎯 360-Degree Performance Review\n- 🏢 Organizational Culture Assessment\n- 👥 Team Collaboration Evaluation\n- 💼 Onboarding Experience Feedback\n- 🚀 Training Effectiveness Survey\n\n**Survey Specifications:**\n- 21-28 professionally designed questions\n- Multiple question types (rating, single choice, multiple choice, open-ended, etc.)\n- Logical question sequencing\n\n**Editing Features:**\n- Modify questions directly in the preview panel\n- Add or remove questions as needed\n- Drag to reorder questions\n\nPlease describe your survey requirements.",
       questionsCount: "questions",
       surveyCreated:
-        "Survey created successfully. Details below:\n\n**Survey Code:** {shortCode}\n\n**Survey Link:** {surveyUrl}\n\n**Administrator:** {creatorName}\n\nPlease save this information for future survey management and data access.",
+        "Survey created successfully. Details below:\n\n**Survey Code:** {shortCode}\n\n**Survey Link:** {surveyUrl}\n\nPlease save this information for future survey management and data access.",
       errorMessage: "An error occurred. Please try again.",
       inputPlaceholder: "Enter your requirements...",
+      suggestedPrompts: [
+        "Employee satisfaction survey",
+        "Product experience feedback",
+        "Event participant feedback",
+        "Customer service quality review",
+      ],
     },
 
     // Survey preview
@@ -110,6 +115,7 @@ export const translations = {
       noSurveysFound: "No surveys found for this administrator",
       createFirst: "Create your first survey",
       hideClosed: "Hide completed",
+      filterAll: "All",
     },
 
     // Analytics
@@ -242,18 +248,17 @@ export const translations = {
     // Home page
     home: {
       title: "畅谈问卷",
-      subtitle: "智能问卷设计与数据分析平台",
-      creatorNameLabel: "管理员名称",
-      creatorNamePlaceholder: "请输入您的姓名或工号",
-      creatorNameHint: "此名称将用于管理您创建的问卷及查看数据报表",
+      subtitle: "与AI共创",
       createDescription: "通过智能对话快速设计专业问卷",
+      signInToCreate: "登录以创建问卷",
       startCreate: "创建问卷",
       viewDashboard: "管理中心",
+      signedInAs: "当前账号",
+      signOut: "退出登录",
       takeDescription: "请输入问卷编号或扫描链接参与调研",
       surveyCodePlaceholder: "问卷编号（如：A7B2）或链接",
       startFill: "开始填写",
       enterCodeError: "请输入有效的问卷编号或链接",
-      enterNameError: "请输入管理员名称",
       footer: "智能驱动 · 高效调研",
     },
 
@@ -264,9 +269,15 @@ export const translations = {
         "您好，欢迎使用问卷设计助手。\n\n请告诉我您希望创建的问卷主题，我将为您生成一份专业的调研问卷。\n\n**常用模板：**\n- 📊 员工满意度调查\n- 🎯 360度绩效评估\n- 🏢 组织文化诊断\n- 👥 团队协作评估\n- 💼 入职体验反馈\n- 🚀 培训效果评估\n\n**问卷规格：**\n- 21-28 道专业设计的题目\n- 多元题型支持（评分、单选、多选、开放题等）\n- 科学的题目编排逻辑\n\n**编辑功能：**\n- 在右侧预览面板直接修改题目内容\n- 删除或新增题目\n- 拖拽调整题目顺序\n\n请描述您的调研需求。",
       questionsCount: "道题目",
       surveyCreated:
-        "问卷创建成功，详细信息如下：\n\n**问卷编号：** {shortCode}\n\n**问卷链接：** {surveyUrl}\n\n**管理员：** {creatorName}\n\n请妥善保存以上信息，以便后续管理问卷和查看数据报表。",
+        "问卷创建成功，详细信息如下：\n\n**问卷编号：** {shortCode}\n\n**问卷链接：** {surveyUrl}\n\n请妥善保存以上信息，以便后续在管理中心查看数据报表。",
       errorMessage: "系统处理时遇到问题，请稍后重试。",
       inputPlaceholder: "请输入您的需求...",
+      suggestedPrompts: [
+        "员工满意度调查，约20道题",
+        "新产品使用体验反馈",
+        "活动参与者意见收集",
+        "客户服务质量评价",
+      ],
     },
 
     // Survey preview
@@ -339,6 +350,7 @@ export const translations = {
       noSurveysFound: "暂无关联的问卷记录",
       createFirst: "创建您的第一份问卷",
       hideClosed: "隐藏已结束",
+      filterAll: "全部",
     },
 
     // Analytics
